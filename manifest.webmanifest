@@ -1,0 +1,11 @@
+{
+  "name": "IELTI 雅思学习工具",
+  "short_name": "IELTI",
+  "description": "雅思课程路线、词汇记忆与今日学习计划",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f3ec",
+  "theme_color": "#5267d9",
+  "lang": "zh-CN"
+}
