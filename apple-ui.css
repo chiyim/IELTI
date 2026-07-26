@@ -1696,7 +1696,7 @@ body.page-class .w .ipa{
 /* MOBILE NAV LOCK v4 — iPhone safe-area stable, larger hit targets, no clipped labels. */
 @media(max-width:760px){
   :root{
-    --ielti-tabbar-bottom:max(.46rem,env(safe-area-inset-bottom,0px));
+    --ielti-tabbar-bottom:max(.18rem,calc(env(safe-area-inset-bottom,0px) - 1.75rem));
     --ielti-tabbar-height:3.72rem;
   }
   body.apple-ui{
