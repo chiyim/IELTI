@@ -1,5 +1,5 @@
-const CACHE='ielti-shell-v15';
-const SHELL=['./','./index.html','./apple-ui.css','./ielti-core.js','./manifest.webmanifest','./ielts-roadmap.html','./ielts-core-vocabulary.html','./ielts-vocabulary-categories.html','./ielts_word_memory_v2_ipa.html','./121-letter-combinations.html'];
+const CACHE='ielti-shell-v55';
+const SHELL=['./','./index.html','./apple-ui.css','./eink-ui.css','./ielti-core.js','./ielts-roadmap-data.js','./manifest.webmanifest','./icon.png','./ielts-roadmap.html','./ielts-core-vocabulary.html','./ielts-vocabulary-categories.html','./ielts_word_memory_v2_ipa.html','./121-letter-combinations.html'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{if(event.request.method!=='GET')return;event.respondWith(fetch(event.request).then(response=>{const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(event.request,copy));return response}).catch(()=>caches.match(event.request).then(hit=>hit||caches.match('./index.html'))))});

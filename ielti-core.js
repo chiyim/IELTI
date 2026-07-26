@@ -1,8 +1,26 @@
 (function (global) {
   'use strict';
   const THEME_KEY = 'ielti_theme_v1';
-  const savedTheme = localStorage.getItem(THEME_KEY) || (global.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-  document.documentElement.dataset.theme = savedTheme;
+  const DISPLAY_KEY = 'ielti_display_mode_v1';
+  const displayModes = ['light', 'dark', 'eink'];
+  const probablyEink = () => {
+    const ua = navigator.userAgent || '';
+    return !!global.matchMedia?.('(monochrome)').matches || /(onyx|boox|hisense|moaan|inkpalm|meebook|bigme|reinkstone|dasung|paperwhite|kindle)/i.test(ua);
+  };
+  const normalizeDisplayMode = mode => displayModes.includes(mode) ? mode : (global.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const savedDisplay = localStorage.getItem(DISPLAY_KEY) || (localStorage.getItem(THEME_KEY) === 'eink' ? 'eink' : null) || (probablyEink() ? 'eink' : null) || localStorage.getItem(THEME_KEY);
+  function applyDisplayMode(mode, persist = true) {
+    const current = normalizeDisplayMode(mode);
+    document.documentElement.dataset.display = current;
+    document.documentElement.dataset.theme = current === 'dark' ? 'dark' : 'light';
+    document.documentElement.classList.toggle('eink-mode', current === 'eink');
+    if (persist) {
+      localStorage.setItem(DISPLAY_KEY, current);
+      localStorage.setItem(THEME_KEY, current === 'eink' ? 'light' : current);
+    }
+    return current;
+  }
+  applyDisplayMode(savedDisplay, false);
   const KEY = 'ielti_progress_v3';
   const SYNC_URL = 'https://word-sync.chilamc-y.workers.dev';
   const SYNC_SCOPE = 'ielti-chilam-personal-site-v1';
@@ -190,11 +208,13 @@
     const syncPageTheme = () => document.body.classList.toggle('light', document.documentElement.dataset.theme === 'light');
     syncPageTheme();
     if (!document.querySelector('.apple-theme-toggle') && !document.getElementById('themeBtn')) {
-      const toggle = document.createElement('button'); toggle.className = 'apple-theme-toggle'; toggle.type = 'button'; toggle.setAttribute('aria-label', '切换深色模式');
-      const paint = () => toggle.textContent = document.documentElement.dataset.theme === 'dark' ? '☀︎' : '◐'; paint();
-      toggle.onclick = () => { const dark = document.documentElement.dataset.theme === 'dark' || (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches); document.documentElement.dataset.theme = dark ? 'light' : 'dark'; localStorage.setItem(THEME_KEY, document.documentElement.dataset.theme); syncPageTheme(); paint(); };
+      const toggle = document.createElement('button'); toggle.className = 'apple-theme-toggle'; toggle.type = 'button'; toggle.setAttribute('aria-label', '切换显示模式');
+      const paint = () => { const mode = document.documentElement.dataset.display || document.documentElement.dataset.theme || 'light'; toggle.textContent = mode === 'eink' ? '墨' : mode === 'dark' ? '☀︎' : '◐'; toggle.title = `当前：${mode === 'eink' ? '墨水屏' : mode === 'dark' ? '深色' : '浅色'} · 点击切换显示模式`; toggle.setAttribute('aria-label', toggle.title); };
+      paint();
+      toggle.onclick = () => { const current = document.documentElement.dataset.display || document.documentElement.dataset.theme || 'light'; const next = displayModes[(displayModes.indexOf(current) + 1) % displayModes.length] || 'light'; applyDisplayMode(next); syncPageTheme(); paint(); };
       document.body.appendChild(toggle);
     }
+    let avatarControl = null;
     if (!document.querySelector('.apple-tabbar')) {
       const current = page;
       const navIcon = name => {
@@ -212,11 +232,15 @@
       const nav = document.createElement('nav'); nav.className = 'apple-tabbar'; nav.setAttribute('aria-label','主要导航'); nav.innerHTML = `<i class="apple-nav-indicator" aria-hidden="true"></i>`+tabs.map(([href,icon,label]) => `<a href="${href}"${current === href ? ' class="active" aria-current="page"' : ''} aria-label="${label}" title="${label}"><span>${icon}</span><em>${label}</em></a>`).join(''); document.body.appendChild(nav);
       const rail = document.createElement('aside'); rail.className = 'apple-desktop-rail'; rail.setAttribute('aria-label', '桌面导航');
       const avatarKey = 'ielti_navigation_avatar_v1';
-      const logo = document.createElement('button'); logo.type = 'button'; logo.className = 'apple-rail-logo'; logo.title = '上传个人头像'; logo.setAttribute('aria-label', '上传个人头像'); logo.textContent = 'I';
+      const defaultAvatar = 'icon.png';
+      const logo = document.createElement('button'); logo.type = 'button'; logo.className = 'apple-rail-logo'; logo.title = '点击更换头像；右键恢复默认头像'; logo.setAttribute('aria-label', '更换或重置头像'); logo.textContent = '';
+      avatarControl = logo;
       const avatarInput = document.createElement('input'); avatarInput.type = 'file'; avatarInput.accept = 'image/*'; avatarInput.hidden = true;
-      const applyAvatar = source => { logo.classList.toggle('has-photo', Boolean(source)); logo.style.backgroundImage = source ? `url("${source}")` : ''; logo.textContent = source ? '' : 'I'; };
-      try { applyAvatar(localStorage.getItem(avatarKey)); } catch (_) { /* local storage is unavailable */ }
+      const applyAvatar = source => { const custom = Boolean(source); logo.classList.add('has-photo'); logo.classList.toggle('has-custom-photo', custom); logo.style.backgroundImage = `url("${source || defaultAvatar}")`; logo.textContent = ''; logo.title = custom ? '点击更换头像；右键恢复默认头像' : '点击上传个人头像'; };
+      const resetAvatar = () => { try { localStorage.removeItem(avatarKey); } catch (_) { /* local storage is unavailable */ } applyAvatar(''); };
+      try { applyAvatar(localStorage.getItem(avatarKey)); } catch (_) { applyAvatar(''); }
       logo.addEventListener('click', () => avatarInput.click());
+      logo.addEventListener('contextmenu', event => { event.preventDefault(); if (!logo.classList.contains('has-custom-photo') || confirm('恢复默认头像？')) resetAvatar(); });
       avatarInput.addEventListener('change', async () => {
         const file = avatarInput.files && avatarInput.files[0]; avatarInput.value = '';
         if (!file || !file.type.startsWith('image/')) return;
@@ -227,18 +251,29 @@
           const source = canvas.toDataURL('image/jpeg', .84); localStorage.setItem(avatarKey, source); applyAvatar(source);
         } catch (_) { /* Keep the current avatar if the selected image cannot be processed. */ }
       });
-      nav.before(rail); rail.append(logo, avatarInput, nav);
+      nav.before(rail); rail.append(nav); document.body.appendChild(avatarInput);
       const links=[...nav.querySelectorAll('a')],activeIndex=links.findIndex(link=>link.classList.contains('active')),storageKey='ielti_nav_previous_index',storedIndex=sessionStorage.getItem(storageKey);
       let previousIndex=storedIndex===null?activeIndex:Number(storedIndex);
-      const placeNavIndicator=()=>requestAnimationFrame(()=>{const indicator=nav.querySelector('.apple-nav-indicator'),active=links[activeIndex];if(!indicator||!active)return;const navRect=nav.getBoundingClientRect(),target=active.getBoundingClientRect();indicator.style.left=`${target.left-navRect.left}px`;indicator.style.top=`${target.top-navRect.top}px`;indicator.style.width=`${target.width}px`;indicator.style.height=`${target.height}px`;if(Number.isInteger(previousIndex)&&previousIndex>=0&&previousIndex<links.length&&previousIndex!==activeIndex&&!reducedMotion()){const from=links[previousIndex].getBoundingClientRect();indicator.animate([{transform:`translate3d(${from.left-target.left}px,${from.top-target.top}px,0) scale(${from.width/target.width},${from.height/target.height})`},{transform:'translate3d(0,0,0) scale(1)'}],{duration:420,easing:'cubic-bezier(.2,.8,.2,1)'});}previousIndex=activeIndex;sessionStorage.setItem(storageKey,String(activeIndex));});
+      const snapPixel=value=>{const ratio=global.devicePixelRatio||1;return Math.round(value*ratio)/ratio;};
+      const placeNavIndicator=()=>requestAnimationFrame(()=>{previousIndex=activeIndex;sessionStorage.setItem(storageKey,String(activeIndex));});
+      const clearPress=()=>links.forEach(link=>link.classList.remove('is-pressing'));
+      nav.addEventListener('pointerdown',event=>{const link=event.target?.closest?.('a');if(link&&nav.contains(link))link.classList.add('is-pressing');},{passive:true});
+      ['pointerup','pointercancel','pointerleave','blur'].forEach(type=>nav.addEventListener(type,clearPress,{passive:true}));
+      nav.addEventListener('touchstart',event=>{const link=event.target?.closest?.('a');if(link&&nav.contains(link))link.classList.add('is-pressing');},{passive:true});
+      nav.addEventListener('touchend',clearPress,{passive:true});
+      nav.addEventListener('touchcancel',clearPress,{passive:true});
       placeNavIndicator();addEventListener('resize',placeNavIndicator,{passive:true});
     }
     const themeControl = document.querySelector('.apple-theme-toggle') || document.getElementById('themeBtn');
+    avatarControl = avatarControl || document.querySelector('.apple-rail-logo');
     const titleRow = title => { if (!title) return null; let row = title.parentElement?.classList.contains('apple-mobile-title-row') ? title.parentElement : null; if (!row) { const host = title.parentElement; host?.classList.add('apple-mobile-title-host'); row = document.createElement('div'); row.className = 'apple-mobile-title-row'; title.before(row); row.append(title); } return row; };
-    const placeThemeControl = () => { if (!themeControl) return; themeControl.style.removeProperty('top'); const desktop = matchMedia('(min-width:761px)').matches; if (desktop) { if (pageClass === 'page-review') { const top = document.querySelector('body.page-review .top'), library = document.getElementById('libraryBtn'); if (top && library) top.append(library); } if (pageClass === 'page-class') { const top = document.querySelector('body.page-class .htop'), collapse = document.getElementById('collapseBtn'); if (top && collapse) top.append(collapse); } document.querySelector('.apple-tabbar')?.append(themeControl); } else if (pageClass === 'page-review') { const row = titleRow(document.querySelector('.brand h1')), library = document.getElementById('libraryBtn'); if (row) { row.append(themeControl); if (library) row.append(library); } } else if (pageClass === 'page-class') { const row = titleRow(document.querySelector('.page-title-brand h1')), collapse = document.getElementById('collapseBtn'); if (row) { row.append(themeControl); if (collapse) row.append(collapse); } } else titleRow(document.querySelector('.top h1,.hero h1'))?.append(themeControl); };
-    placeThemeControl(); matchMedia('(min-width:761px)').addEventListener('change', placeThemeControl);
+    const pageTitle = () => pageClass === 'page-review' ? document.querySelector('.brand h1') : pageClass === 'page-class' ? document.querySelector('.page-title-brand h1') : document.querySelector('.top h1,.hero h1,.phonics-head h1');
+    const placeAvatarControl = () => { if (!avatarControl) return; titleRow(pageTitle())?.append(avatarControl); };
+    const placeThemeControl = () => { if (!themeControl) return; themeControl.style.removeProperty('top'); const desktop = matchMedia('(min-width:761px)').matches; if (desktop) { document.querySelector('.apple-tabbar')?.append(themeControl); } else if (pageClass === 'page-review') { titleRow(document.querySelector('.brand h1'))?.append(themeControl); } else if (pageClass === 'page-class') { titleRow(document.querySelector('.page-title-brand h1'))?.append(themeControl); } else titleRow(document.querySelector('.top h1,.hero h1,.phonics-head h1'))?.append(themeControl); };
+    placeThemeControl(); placeAvatarControl(); matchMedia('(min-width:761px)').addEventListener('change', () => { placeThemeControl(); placeAvatarControl(); });
     if (!document.querySelector('[data-ielti-sync]') && !document.getElementById('syncState')) { const status = document.createElement('div'); status.dataset.ieltiSync = ''; status.className = 'ielti-sync-state'; status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite'); document.body.appendChild(status); }
     syncStatus(CLOUD_SYNC_ENABLED ? '准备自动同步…' : '本地模式 · 进度仅保存在此浏览器');
+    requestAnimationFrame(() => document.documentElement.classList.remove('ielti-booting'));
   }
   migrate();
   mirrorLegacyProgress();

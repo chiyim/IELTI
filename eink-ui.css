@@ -1,0 +1,411 @@
+/* IELTI E-ink display mode.
+   Goal: high contrast, clear edges, low motion, and no color-only meaning. */
+:root[data-display="eink"]{
+  color-scheme:light;
+  --apple-bg:#fff;
+  --apple-surface:#fff;
+  --apple-solid:#fff;
+  --apple-ink:#050505;
+  --apple-secondary:#333;
+  --apple-line:#0a0a0a;
+  --apple-blue:#050505;
+  --apple-green:#050505;
+  --apple-shadow:none;
+  --bg:#fff;
+  --panel:#fff;
+  --panel2:#fff;
+  --ink:#050505;
+  --txt:#050505;
+  --muted:#333;
+  --line:#111;
+  --chip:#fff;
+  --known:#f4f4f4;
+}
+
+:root[data-display="eink"] *,
+:root[data-display="eink"] *::before,
+:root[data-display="eink"] *::after{
+  animation:none!important;
+  transition:none!important;
+  text-shadow:none!important;
+  box-shadow:none!important;
+}
+
+:root[data-display="eink"] body,
+:root[data-display="eink"] body.apple-ui{
+  background:#fff!important;
+  color:#050505!important;
+  filter:none!important;
+}
+
+:root[data-display="eink"] .apple-theme-toggle,
+:root[data-display="eink"] .apple-tabbar,
+:root[data-display="eink"] .apple-desktop-rail,
+:root[data-display="eink"] .card,
+:root[data-display="eink"] .tool,
+:root[data-display="eink"] .today-card,
+:root[data-display="eink"] .dashboard-card,
+:root[data-display="eink"] .week-card,
+:root[data-display="eink"] .day-item,
+:root[data-display="eink"] .vcard,
+:root[data-display="eink"] .w,
+:root[data-display="eink"] .phonics-card,
+:root[data-display="eink"] .stat,
+:root[data-display="eink"] .stat-card,
+:root[data-display="eink"] .review-card,
+:root[data-display="eink"] .memory-card,
+:root[data-display="eink"] .phase-tabs,
+:root[data-display="eink"] .round-tabs,
+:root[data-display="eink"] .review-deck-tabs,
+:root[data-display="eink"] .mode-tabs,
+:root[data-display="eink"] .controls,
+:root[data-display="eink"] .search,
+:root[data-display="eink"] input,
+:root[data-display="eink"] select,
+:root[data-display="eink"] textarea{
+  background:#fff!important;
+  color:#050505!important;
+  border-color:#111!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+
+:root[data-display="eink"] .card,
+:root[data-display="eink"] .tool,
+:root[data-display="eink"] .today-card,
+:root[data-display="eink"] .dashboard-card,
+:root[data-display="eink"] .week-card,
+:root[data-display="eink"] .day-item,
+:root[data-display="eink"] .vcard,
+:root[data-display="eink"] .w,
+:root[data-display="eink"] .phonics-card,
+:root[data-display="eink"] .stat,
+:root[data-display="eink"] .stat-card,
+:root[data-display="eink"] .review-card,
+:root[data-display="eink"] .memory-card{
+  border:2px solid #111!important;
+}
+
+:root[data-display="eink"] button:not(.apple-rail-logo),
+:root[data-display="eink"] .btn,
+:root[data-display="eink"] .pill,
+:root[data-display="eink"] .chip,
+:root[data-display="eink"] .phase-tab,
+:root[data-display="eink"] .round-tab,
+:root[data-display="eink"] .mode-tab,
+:root[data-display="eink"] .day-chip,
+:root[data-display="eink"] .review-deck-tab,
+:root[data-display="eink"] a.button{
+  background:#fff!important;
+  color:#050505!important;
+  border:2px solid #111!important;
+  box-shadow:none!important;
+}
+
+:root[data-display="eink"] button:hover,
+:root[data-display="eink"] .btn:hover,
+:root[data-display="eink"] .pill:hover,
+:root[data-display="eink"] .chip:hover{
+  background:#f2f2f2!important;
+}
+
+:root[data-display="eink"] .on,
+:root[data-display="eink"] button.active,
+:root[data-display="eink"] .btn.on,
+:root[data-display="eink"] .phase-tab.active,
+:root[data-display="eink"] .round-tab.active,
+:root[data-display="eink"] .mode-tab.active,
+:root[data-display="eink"] .day-chip.active,
+:root[data-display="eink"] .review-deck-tab.active{
+  background:#050505!important;
+  color:#fff!important;
+  border-color:#050505!important;
+  font-weight:800!important;
+}
+
+:root[data-display="eink"] .panel,
+:root[data-display="eink"] .panel.active,
+:root[data-display="eink"] .tab-panel,
+:root[data-display="eink"] .tab-panel.active,
+:root[data-display="eink"] .library,
+:root[data-display="eink"] #library{
+  background:#fff!important;
+  color:#050505!important;
+  box-shadow:none!important;
+}
+
+:root[data-display="eink"] .apple-nav-indicator,
+:root[data-display="eink"] .round-tabs::before,
+:root[data-display="eink"] .review-deck-tabs::before,
+:root[data-display="eink"] .phase-tabs::before{
+  display:none!important;
+}
+
+:root[data-display="eink"] .apple-tabbar a{
+  color:#333!important;
+}
+:root[data-display="eink"] .apple-tabbar a.active{
+  background:transparent!important;
+  color:#050505!important;
+  outline:2px solid #050505!important;
+  outline-offset:-.35rem;
+  font-weight:800!important;
+}
+
+:root[data-display="eink"] .page-kicker,
+:root[data-display="eink"] .eyebrow,
+:root[data-display="eink"] small,
+:root[data-display="eink"] .sub,
+:root[data-display="eink"] .muted,
+:root[data-display="eink"] .statline,
+:root[data-display="eink"] .defs,
+:root[data-display="eink"] .zh,
+:root[data-display="eink"] .meta{
+  color:#333!important;
+}
+
+:root[data-display="eink"] .play-btn,
+:root[data-display="eink"] .speaker,
+:root[data-display="eink"] .sound-btn,
+:root[data-display="eink"] [data-speak],
+:root[data-display="eink"] .pronounce-btn{
+  background:#fff!important;
+  color:#050505!important;
+  border:2px solid #111!important;
+  box-shadow:none!important;
+}
+
+:root[data-display="eink"] .progress,
+:root[data-display="eink"] .bar,
+:root[data-display="eink"] progress,
+:root[data-display="eink"] .track{
+  background:#ddd!important;
+  border:1px solid #111!important;
+  box-shadow:none!important;
+}
+:root[data-display="eink"] .progress > *,
+:root[data-display="eink"] .bar > *,
+:root[data-display="eink"] .fill,
+:root[data-display="eink"] progress::-webkit-progress-value{
+  background:#050505!important;
+}
+
+:root[data-display="eink"] .mastered,
+:root[data-display="eink"] .known,
+:root[data-display="eink"] .familiar,
+:root[data-display="eink"] .is-done,
+:root[data-display="eink"] .completed{
+  background:#f6f6f6!important;
+}
+:root[data-display="eink"] .known .en,
+:root[data-display="eink"] .known .zh,
+:root[data-display="eink"] .mastered .word,
+:root[data-display="eink"] .mastered .defs{
+  color:#222!important;
+  font-weight:400!important;
+  text-decoration-color:#050505!important;
+}
+
+:root[data-display="eink"] .today-hero,
+:root[data-display="eink"] .hero-card,
+:root[data-display="eink"] .review-hero{
+  background:#fff!important;
+  color:#050505!important;
+  border:2px solid #111!important;
+  box-shadow:none!important;
+}
+
+:root[data-display="eink"] body.page-today .hero,
+:root[data-display="eink"] body.page-phonics .hero,
+:root[data-display="eink"] body.page-phonics .study-card,
+:root[data-display="eink"] body.page-phonics .quiz-box,
+:root[data-display="eink"] body.page-phonics .hero-stat,
+:root[data-display="eink"] body.page-phonics .phonics-card{
+  background:#fff!important;
+  color:#050505!important;
+  border-color:#111!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+
+:root[data-display="eink"] body.page-today .hero::before,
+:root[data-display="eink"] body.page-today .hero::after{
+  display:none!important;
+  content:none!important;
+}
+
+:root[data-display="eink"] body.page-today .hero{
+  border:2px solid #111!important;
+}
+
+:root[data-display="eink"] body.page-today .hero > *{
+  position:relative!important;
+  z-index:2!important;
+  color:#050505!important;
+}
+
+:root[data-display="eink"] body.page-today .hero h2,
+:root[data-display="eink"] body.page-today .hero p,
+:root[data-display="eink"] body.page-today .hero-copy,
+:root[data-display="eink"] body.page-phonics .hero h2,
+:root[data-display="eink"] body.page-phonics .hero p{
+  color:#050505!important;
+}
+
+:root[data-display="eink"] body.page-today .primary{
+  background:#fff!important;
+  color:#050505!important;
+  border:2px solid #111!important;
+  box-shadow:none!important;
+}
+
+:root[data-display="eink"] .apple-tabbar,
+:root[data-display="eink"] .apple-tabbar *,
+:root[data-display="eink"] .apple-tabbar *::before,
+:root[data-display="eink"] .apple-tabbar *::after,
+:root[data-display="eink"] .apple-nav-indicator{
+  box-shadow:none!important;
+}
+
+:root[data-display="eink"] body.page-roadmap .phase-donut-card,
+:root[data-display="eink"] body.page-roadmap .phase-donut-card *,
+:root[data-display="eink"] body.page-roadmap .phase-donut-card *::before,
+:root[data-display="eink"] body.page-roadmap .phase-donut-card *::after,
+:root[data-display="eink"] body.page-roadmap .stat-flat,
+:root[data-display="eink"] body.page-roadmap .today-card,
+:root[data-display="eink"] body.page-roadmap .week-card{
+  box-shadow:none!important;
+}
+
+:root[data-display="eink"] body.page-roadmap .phase-donut-card,
+:root[data-display="eink"] body.page-roadmap .today-card,
+:root[data-display="eink"] body.page-roadmap .stat-flat{
+  background:#fff!important;
+  color:#050505!important;
+  border:2px solid #111!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+
+:root[data-display="eink"] body.page-review .review-deck-tabs button.active,
+:root[data-display="eink"] body.page-review .review-deck-tabs button[aria-pressed="true"],
+:root[data-display="eink"] body.page-core .round-tab.active,
+:root[data-display="eink"] body.page-core .mode-tab.active{
+  background:#050505!important;
+  color:#fff!important;
+  border-color:#050505!important;
+}
+
+:root[data-display="eink"] body.page-review .review-deck-tabs,
+:root[data-display="eink"] body.page-review .srs-guide,
+:root[data-display="eink"] body.page-review .why-review{
+  background:#fff!important;
+  color:#050505!important;
+  border:2px solid #111!important;
+  border-radius:1.5rem!important;
+  box-shadow:none!important;
+}
+
+:root[data-display="eink"] body.page-review .review-deck-tabs{
+  border:0!important;
+  border-radius:1.15rem!important;
+}
+
+:root[data-display="eink"] body.page-review .srs-guide li,
+:root[data-display="eink"] body.page-review .why-review-steps div{
+  background:#fff!important;
+  border:1.5px solid #111!important;
+  box-shadow:none!important;
+}
+
+:root[data-display="eink"] body.page-core .nav-card,
+:root[data-display="eink"] body.page-core .mode-tabs,
+:root[data-display="eink"] body.page-core .vcard,
+:root[data-display="eink"] body.page-core .vcard:hover,
+:root[data-display="eink"] body.page-core .day-select{
+  background:#fff!important;
+  color:#050505!important;
+  border-color:#111!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+
+:root[data-display="eink"] body.page-core .mode-tab.active{
+  background:#050505!important;
+  color:#fff!important;
+}
+
+:root[data-display="eink"] body.page-phonics .sound-title b{
+  font-size:1.52rem!important;
+  line-height:1.12!important;
+}
+
+:root[data-display="eink"] body.page-phonics .sound-title span{
+  font-size:.94rem!important;
+  line-height:1.35!important;
+  color:#222!important;
+}
+
+:root[data-display="eink"] .apple-theme-toggle,
+:root[data-display="eink"] #themeBtn{
+  font-size:.92rem!important;
+  box-shadow:none!important;
+}
+
+:root[data-display="eink"] body.page-class .w .spk,
+:root[data-display="eink"] body.page-core .speak-btn,
+:root[data-display="eink"] body.page-phonics .sound-btn{
+  background:#fff!important;
+  color:#050505!important;
+  border:2px solid #111!important;
+  box-shadow:none!important;
+}
+
+:root[data-display="eink"] body.page-phonics .learn-toggle{
+  width:1.38rem!important;
+  height:1.38rem!important;
+  min-width:1.38rem!important;
+  min-height:1.38rem!important;
+  background:#fff!important;
+  color:transparent!important;
+  border:1.5px solid #111!important;
+  box-shadow:none!important;
+}
+
+:root[data-display="eink"] body.page-phonics .learn-toggle.done{
+  background:#050505!important;
+  border-color:#050505!important;
+  color:#fff!important;
+}
+
+:root[data-display="eink"] .apple-mobile-title-row .apple-rail-logo,
+:root[data-display="eink"] .apple-rail-logo.has-photo{
+  display:block!important;
+  background-color:#fff!important;
+  background-position:center!important;
+  background-size:cover!important;
+  background-repeat:no-repeat!important;
+  border:2px solid #111!important;
+  box-shadow:none!important;
+  filter:none!important;
+}
+
+:root[data-display="eink"] .apple-rail-logo::after{
+  box-shadow:none!important;
+  border:0!important;
+}
+
+:root[data-display="eink"] svg,
+:root[data-display="eink"] canvas,
+:root[data-display="eink"] img{
+  filter:grayscale(1) contrast(1.08)!important;
+}
+
+@media (monochrome){
+  :root:not([data-display]){
+    color-scheme:light;
+  }
+}

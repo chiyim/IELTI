@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#5267d9"><link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#5267d9"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.png" type="image/png"><link rel="apple-touch-icon" href="icon.png">
 <title>雅思词汇 · 分类记忆法</title>
+<script>document.documentElement.classList.add('ielti-booting');try{var m=localStorage.getItem('ielti_display_mode_v1')||localStorage.getItem('ielti_theme_v1');if(['light','dark','eink'].indexOf(m)>-1){document.documentElement.dataset.display=m;document.documentElement.dataset.theme=m==='dark'?'dark':'light';document.documentElement.classList.toggle('eink-mode',m==='eink');}}catch(e){}setTimeout(()=>document.documentElement.classList.remove('ielti-booting'),1200);</script>
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -122,29 +123,29 @@ main{max-width:920px;margin:0 auto;padding:14px}
   h1{font-size:16px}
 }
 </style>
-<link rel="stylesheet" href="apple-ui.css?v=20260723-29">
+<link rel="stylesheet" href="apple-ui.css?v=20260727-10">
+  <link rel="stylesheet" href="eink-ui.css?v=20260727-10">
 </head>
-<body>
-<header>
+<body class="apple-ui page-class"><header>
   <div class="htop">
     <div class="page-title-brand">
       <small class="page-kicker">IELTS VOCABULARY · CATEGORY-BASED MEMORY</small>
-      <h1>雅思词汇 · 分类记忆法</h1>
+      <h1><span class="desktop-title">雅思词汇 · 分类记忆法</span><span class="mobile-title">词汇 · 分类记忆法</span></h1>
+      <div class="sub statline" id="stat"></div>
     </div>
     <span class="spacer"></span>
-    <button class="btn" id="collapseBtn" title="收起 / 展开菜单">▾</button>
+    <button class="btn" id="themeBtn">☀️ 浅色</button>
   </div>
-  <div class="sub statline" id="stat"></div>
   <nav class="quick-tools" aria-label="常用学习工具">
     <button class="btn" id="zhBtn">遮中文</button>
     <button class="btn" id="enBtn">遮英文</button>
     <button class="btn" id="knownBtn">只看未熟悉</button>
-    <button class="btn" id="fcBtn">🃏 翻卡记忆</button>
+    <button class="btn" id="fcBtn">翻卡记忆</button>
+    <button class="btn" id="collapseBtn" title="收起 / 展开菜单" aria-label="收起 / 展开菜单">▾</button>
   </nav>
   <div class="controls">
     <input class="search" id="q" placeholder="🔍 搜索英文 / 中文 / 分类…">
     <select class="category-select" id="groupFilter" aria-label="按分类筛选"><option value="">全部分类</option></select>
-    <button class="btn" id="themeBtn">☀️ 浅色</button>
     <button class="btn on" id="autoSpkBtn">🔊 自动发音</button>
     <button class="btn" id="resetBtn">重置进度</button>
   </div>
@@ -178,7 +179,7 @@ main{max-width:920px;margin:0 auto;padding:14px}
   <div id="transBody"></div>
 </div>
 
-<script src="ielti-core.js?v=20260723-20"></script>
+<script src="ielti-core.js?v=20260727-10"></script>
 <script>
 // ---- 发音 (Web Speech API, 离线使用系统语音) ----
 let autoSpeak=true;
@@ -353,16 +354,29 @@ document.getElementById('resetBtn').onclick=()=>{if(confirm('确定清空“已�
 window.addEventListener('ielti-progress',()=>{known=new Set(Object.entries(IELTI.getDeck('class')).filter(([,card])=>card.familiar).map(([wordId])=>wordId));localStorage.setItem(LS_FAMILIAR,JSON.stringify([...known]));render()});
 document.getElementById('autoSpkBtn').onclick=function(){autoSpeak=!autoSpeak;this.classList.toggle('on',autoSpeak);if(!autoSpeak)speechSynthesis.cancel();};
 
-// theme
-function applyTheme(t){document.documentElement.dataset.theme=t;document.body.classList.toggle('light',t==='light');const button=document.getElementById('themeBtn');button.textContent=t==='light'?'◐':'☀︎';button.setAttribute('aria-label',t==='light'?'切换深色模式':'切换浅色模式');button.title=button.getAttribute('aria-label');}
-let theme=localStorage.getItem('ielti_theme_v1')||localStorage.getItem(LS_THEME)||'dark';applyTheme(theme);
+// display mode
+const DISPLAY_KEY='ielti_display_mode_v1';
+const DISPLAY_MODES=['light','dark','eink'];
+function normalizeDisplayMode(t){return DISPLAY_MODES.includes(t)?t:'dark';}
+function applyTheme(t){
+  theme=normalizeDisplayMode(t);
+  document.documentElement.dataset.display=theme;
+  document.documentElement.dataset.theme=theme==='dark'?'dark':'light';
+  document.documentElement.classList.toggle('eink-mode',theme==='eink');
+  document.body.classList.toggle('light',theme!=='dark');
+  const button=document.getElementById('themeBtn');
+  button.textContent=theme==='eink'?'墨':theme==='light'?'◐':'☀︎';
+  button.setAttribute('aria-label',`当前：${theme==='eink'?'墨水屏':theme==='light'?'浅色':'深色'} · 点击切换显示模式`);
+  button.title=button.getAttribute('aria-label');
+}
+let theme=localStorage.getItem(DISPLAY_KEY)||localStorage.getItem('ielti_theme_v1')||localStorage.getItem(LS_THEME)||'dark';applyTheme(theme);
 // 顶部菜单收起/展开
 const LS_COLLAPSE='wclass_collapse_v1';
 const headerEl=document.querySelector('header');
-function applyCollapse(c){headerEl.classList.toggle('collapsed',c);}
+function applyCollapse(c){headerEl.classList.toggle('collapsed',c);document.getElementById('collapseBtn').textContent=c?'▸':'▾';}
 applyCollapse(localStorage.getItem(LS_COLLAPSE)!=='0');
 document.getElementById('collapseBtn').onclick=()=>{const c=!headerEl.classList.contains('collapsed');applyCollapse(c);localStorage.setItem(LS_COLLAPSE,c?'1':'0');};
-document.getElementById('themeBtn').onclick=()=>{theme=theme==='light'?'dark':'light';localStorage.setItem(LS_THEME,theme);localStorage.setItem('ielti_theme_v1',theme);applyTheme(theme);};
+document.getElementById('themeBtn').onclick=()=>{theme=DISPLAY_MODES[(DISPLAY_MODES.indexOf(theme)+1)%DISPLAY_MODES.length]||'light';localStorage.setItem(DISPLAY_KEY,theme);localStorage.setItem(LS_THEME,theme);localStorage.setItem('ielti_theme_v1',theme==='eink'?'light':theme);applyTheme(theme);};
 
 // flashcards
 let deck=[],fi=0,flipped=false,fcMode='en2zh';
