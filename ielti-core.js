@@ -257,7 +257,13 @@
       const snapPixel=value=>{const ratio=global.devicePixelRatio||1;return Math.round(value*ratio)/ratio;};
       const placeNavIndicator=()=>requestAnimationFrame(()=>{previousIndex=activeIndex;sessionStorage.setItem(storageKey,String(activeIndex));});
       const clearPress=()=>links.forEach(link=>link.classList.remove('is-pressing'));
+      let navTap=null;
+      const isMobileNav=()=>matchMedia('(max-width:760px)').matches;
+      const sameUrl=href=>new URL(href,location.href).href===location.href;
       nav.addEventListener('pointerdown',event=>{const link=event.target?.closest?.('a');if(link&&nav.contains(link))link.classList.add('is-pressing');},{passive:true});
+      nav.addEventListener('pointerdown',event=>{const link=event.target?.closest?.('a');navTap=link&&nav.contains(link)?{link,x:event.clientX,y:event.clientY}:null;},{passive:true});
+      nav.addEventListener('pointermove',event=>{if(navTap&&Math.hypot(event.clientX-navTap.x,event.clientY-navTap.y)>14)navTap=null;},{passive:true});
+      nav.addEventListener('pointerup',event=>{if(!isMobileNav()||!navTap)return;const link=event.target?.closest?.('a');if(link!==navTap.link||sameUrl(link.href)){navTap=null;return}event.preventDefault();link.classList.add('is-pressing');location.assign(link.href);navTap=null;},{capture:true});
       ['pointerup','pointercancel','pointerleave','blur'].forEach(type=>nav.addEventListener(type,clearPress,{passive:true}));
       nav.addEventListener('touchstart',event=>{const link=event.target?.closest?.('a');if(link&&nav.contains(link))link.classList.add('is-pressing');},{passive:true});
       nav.addEventListener('touchend',clearPress,{passive:true});
