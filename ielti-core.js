@@ -27,7 +27,7 @@
   model.activity ||= {};
 
   function normalizeCard(card = {}) {
-    return { reps: card.reps || card.level || 0, lapses: card.lapses || 0, interval: card.interval || 0, ease: card.ease || 2.5, due: card.due || null, lastReviewed: card.lastReviewed || card.last || null, familiar: !!card.familiar, mastered: !!card.mastered };
+    return { reps: card.reps || card.level || 0, lapses: card.lapses || 0, interval: card.interval || 0, ease: card.ease || 2.5, due: card.due || null, lastReviewed: card.lastReviewed || card.last || null, familiar: !!card.familiar, mastered: !!card.mastered, familiarUpdatedAt: card.familiarUpdatedAt || null, masteredUpdatedAt: card.masteredUpdatedAt || null };
   }
   const wordPart = value => String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
   const wordId = word => [word.day, word.group, word.en].map(wordPart).join('|');
@@ -98,9 +98,9 @@
     card.lastReviewed = nowIso(); card.mastered = card.reps >= 3 && card.interval >= 21; cards[id] = card; markActivity('reviews'); save(); return card;
   }
   function setRoadmap(completed, startDate) { model.roadmap.completed = completed || {}; if (typeof startDate === 'string') model.roadmap.startDate = startDate; save(); }
-  function setMastered(deck, ids) { const cards = model.vocab[deck] ||= {}; const wanted = new Set(ids); Object.keys(cards).forEach(id => { if (cards[id].mastered && !wanted.has(id)) cards[id].mastered = false; }); wanted.forEach(id => { cards[id] = normalizeCard({ ...cards[id], reps: Math.max(3, cards[id]?.reps || 0), interval: Math.max(30, cards[id]?.interval || 0), mastered: true }); }); save(); }
-  function setFamiliar(deck, id, familiar) { const cards = model.vocab[deck] ||= {}; cards[id] = normalizeCard({ ...cards[id], familiar }); save(); return cards[id]; }
-  function setFamiliarList(deck, ids) { const cards = model.vocab[deck] ||= {}, wanted = new Set(ids); Object.keys(cards).forEach(id => { cards[id] = normalizeCard({ ...cards[id], familiar: wanted.has(id) }); }); wanted.forEach(id => { cards[id] = normalizeCard({ ...cards[id], familiar: true }); }); save(); }
+  function setMastered(deck, ids) { const cards = model.vocab[deck] ||= {}, stamp = nowIso(); const wanted = new Set(ids); Object.keys(cards).forEach(id => { if (cards[id].mastered && !wanted.has(id)) cards[id] = normalizeCard({ ...cards[id], mastered: false, masteredUpdatedAt: stamp }); }); wanted.forEach(id => { cards[id] = normalizeCard({ ...cards[id], reps: Math.max(3, cards[id]?.reps || 0), interval: Math.max(30, cards[id]?.interval || 0), mastered: true, masteredUpdatedAt: cards[id]?.mastered ? cards[id]?.masteredUpdatedAt : stamp }); }); save(); }
+  function setFamiliar(deck, id, familiar) { const cards = model.vocab[deck] ||= {}, current = normalizeCard(cards[id]); cards[id] = normalizeCard({ ...current, familiar, familiarUpdatedAt: current.familiar === familiar ? current.familiarUpdatedAt : nowIso() }); save(); return cards[id]; }
+  function setFamiliarList(deck, ids) { const cards = model.vocab[deck] ||= {}, wanted = new Set(ids), stamp = nowIso(); Object.keys(cards).forEach(id => { const current = normalizeCard(cards[id]), familiar = wanted.has(id); cards[id] = normalizeCard({ ...current, familiar, familiarUpdatedAt: current.familiar === familiar ? current.familiarUpdatedAt : stamp }); }); wanted.forEach(id => { const current = normalizeCard(cards[id]); cards[id] = normalizeCard({ ...current, familiar: true, familiarUpdatedAt: current.familiar ? current.familiarUpdatedAt : stamp }); }); save(); }
   function replaceDeck(deck, cards) { model.vocab[deck] = Object.fromEntries(Object.entries(cards || {}).map(([id, card]) => [id, normalizeCard(card)])); save(); }
   function normalizePhonics(value = {}) {
     const learned = Array.isArray(value.learned) ? [...new Set(value.learned.filter(Boolean))] : [];
@@ -131,7 +131,19 @@
     entries.forEach(([key, value]) => localStorage.setItem(key, value));
     return entries.length;
   }
-  function merge(remote) { if (!remote || remote.version !== 3) return false; const newer = (a, b) => !a ? b : !b ? a : new Date(b.lastReviewed || 0) > new Date(a.lastReviewed || 0) ? b : a; Object.entries(remote.roadmap?.completed || {}).forEach(([k, v]) => { if (v) model.roadmap.completed[k] = true; }); ['core', 'class'].forEach(deck => Object.entries(remote.vocab?.[deck] || {}).forEach(([id, card]) => { model.vocab[deck][id] = newer(model.vocab[deck][id], card); })); if (remote.phonics) { const localPhonics = normalizePhonics(model.phonics), remotePhonics = normalizePhonics(remote.phonics); model.phonics = { learned: [...new Set([...localPhonics.learned, ...remotePhonics.learned])], reviews: [...new Set([...localPhonics.reviews, ...remotePhonics.reviews])], quiz: { right: Math.max(localPhonics.quiz.right, remotePhonics.quiz.right), total: Math.max(localPhonics.quiz.total, remotePhonics.quiz.total) } }; } Object.entries(remote.activity || {}).forEach(([day, activity]) => { const local = model.activity[day] ||= { reviews: 0, courses: 0 }; local.reviews = Math.max(local.reviews || 0, activity.reviews || 0); local.courses = Math.max(local.courses || 0, activity.courses || 0); }); if (!model.roadmap.startDate && remote.roadmap?.startDate) model.roadmap.startDate = remote.roadmap.startDate; save(); return true; }
+  function mergeCard(localCard, remoteCard) {
+    const local = normalizeCard(localCard), remote = normalizeCard(remoteCard);
+    const base = new Date(remote.lastReviewed || 0) > new Date(local.lastReviewed || 0) ? remote : local;
+    const chooseFlag = (flag, stamp) => {
+      const lt = new Date(local[stamp] || 0).getTime(), rt = new Date(remote[stamp] || 0).getTime();
+      if (rt > lt) return { value: remote[flag], updatedAt: remote[stamp] };
+      if (lt > rt) return { value: local[flag], updatedAt: local[stamp] };
+      return { value: !!(local[flag] || remote[flag]), updatedAt: local[stamp] || remote[stamp] || null };
+    };
+    const familiar = chooseFlag('familiar', 'familiarUpdatedAt'), mastered = chooseFlag('mastered', 'masteredUpdatedAt');
+    return normalizeCard({ ...base, familiar: familiar.value, familiarUpdatedAt: familiar.updatedAt, mastered: mastered.value, masteredUpdatedAt: mastered.updatedAt });
+  }
+  function merge(remote) { if (!remote || remote.version !== 3) return false; Object.entries(remote.roadmap?.completed || {}).forEach(([k, v]) => { if (v) model.roadmap.completed[k] = true; }); ['core', 'class'].forEach(deck => Object.entries(remote.vocab?.[deck] || {}).forEach(([id, card]) => { model.vocab[deck][id] = mergeCard(model.vocab[deck][id], card); })); if (remote.phonics) { const localPhonics = normalizePhonics(model.phonics), remotePhonics = normalizePhonics(remote.phonics); model.phonics = { learned: [...new Set([...localPhonics.learned, ...remotePhonics.learned])], reviews: [...new Set([...localPhonics.reviews, ...remotePhonics.reviews])], quiz: { right: Math.max(localPhonics.quiz.right, remotePhonics.quiz.right), total: Math.max(localPhonics.quiz.total, remotePhonics.quiz.total) } }; } Object.entries(remote.activity || {}).forEach(([day, activity]) => { const local = model.activity[day] ||= { reviews: 0, courses: 0 }; local.reviews = Math.max(local.reviews || 0, activity.reviews || 0); local.courses = Math.max(local.courses || 0, activity.courses || 0); }); if (!model.roadmap.startDate && remote.roadmap?.startDate) model.roadmap.startDate = remote.roadmap.startDate; save(); return true; }
 
   let englishVoice = null, pendingSpeech = null;
   function pickEnglishVoice() { if (!('speechSynthesis' in global)) return null; const voices = speechSynthesis.getVoices(); englishVoice = voices.find(voice => /en[-_]US/i.test(voice.lang) && /(Samantha|Google US English|Microsoft.*(?:Aria|Jenny)|Aria|Jenny)/i.test(voice.name)) || voices.find(voice => /en[-_]US/i.test(voice.lang)) || voices.find(voice => /^en/i.test(voice.lang)) || null; return englishVoice; }
