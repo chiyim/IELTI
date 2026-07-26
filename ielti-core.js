@@ -59,7 +59,7 @@
     if (!model.roadmap.startDate && start) { model.roadmap.startDate = start; changed = true; }
     const core = parse('ielts_vocab_mastered_v1', {});
     Object.keys(core).forEach(id => { if (core[id] && !model.vocab.core[id]) { model.vocab.core[id] = normalizeCard({ reps: 3, interval: 30, mastered: true }); changed = true; } });
-    const known = parse('wclass_known_v1', []);
+    const known = [...new Set([...parse('wclass_known_v1', []), ...parse('wclass_familiar_v1', [])])];
     known.forEach(id => { if (!model.vocab.class[id]) { model.vocab.class[id] = normalizeCard({ reps: 3, interval: 30, mastered: true }); changed = true; } });
     const srs = parse('ielts_srs_v2', {});
     Object.entries(srs).forEach(([id, card]) => { if (!model.vocab.class[id]) { model.vocab.class[id] = normalizeCard(card); changed = true; } });
@@ -100,7 +100,7 @@
   function setRoadmap(completed, startDate) { model.roadmap.completed = completed || {}; if (typeof startDate === 'string') model.roadmap.startDate = startDate; save(); }
   function setMastered(deck, ids) { const cards = model.vocab[deck] ||= {}; const wanted = new Set(ids); Object.keys(cards).forEach(id => { if (cards[id].mastered && !wanted.has(id)) cards[id].mastered = false; }); wanted.forEach(id => { cards[id] = normalizeCard({ ...cards[id], reps: Math.max(3, cards[id]?.reps || 0), interval: Math.max(30, cards[id]?.interval || 0), mastered: true }); }); save(); }
   function setFamiliar(deck, id, familiar) { const cards = model.vocab[deck] ||= {}; cards[id] = normalizeCard({ ...cards[id], familiar }); save(); return cards[id]; }
-  function setFamiliarList(deck, ids) { const cards = model.vocab[deck] ||= {}, wanted = new Set(ids); Object.keys(cards).forEach(id => { cards[id] = normalizeCard({ ...cards[id], familiar: wanted.has(id) }); }); save(); }
+  function setFamiliarList(deck, ids) { const cards = model.vocab[deck] ||= {}, wanted = new Set(ids); Object.keys(cards).forEach(id => { cards[id] = normalizeCard({ ...cards[id], familiar: wanted.has(id) }); }); wanted.forEach(id => { cards[id] = normalizeCard({ ...cards[id], familiar: true }); }); save(); }
   function replaceDeck(deck, cards) { model.vocab[deck] = Object.fromEntries(Object.entries(cards || {}).map(([id, card]) => [id, normalizeCard(card)])); save(); }
   function normalizePhonics(value = {}) {
     const learned = Array.isArray(value.learned) ? [...new Set(value.learned.filter(Boolean))] : [];
