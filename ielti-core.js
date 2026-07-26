@@ -9,12 +9,22 @@
   const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
   const CLOUD_SYNC_ENABLED = location.protocol === 'https:' && !LOCAL_HOSTS.has(location.hostname);
   const SYNC_DIRTY_KEY = 'ielti_sync_dirty_v1';
-  const BACKUP_KEYS = ['ielti_progress_v3', 'ielts_g_plan_progress_v2', 'ielts_g_plan_start_v1', 'ielts_vocab_mastered_v1', 'wclass_known_v1', 'ielts_srs_v2', 'ielts_review_prefs_v1', 'ielti_phonics_121_v1'];
+  const BACKUP_KEYS = ['ielti_progress_v3', 'ielts_g_plan_progress_v2', 'ielts_g_plan_start_v1', 'ielts_vocab_mastered_v1', 'wclass_known_v1', 'wclass_familiar_v1', 'ielts_srs_v2', 'ielts_review_prefs_v1', 'ielti_phonics_121_v1'];
   const DAY = 86400000;
   const parse = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; } };
   const nowIso = () => new Date().toISOString();
-  const fresh = () => ({ version: 3, deviceId: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), updatedAt: nowIso(), roadmap: { startDate: '', completed: {} }, vocab: { core: {}, class: {} }, activity: {} });
+  const fresh = () => ({ version: 3, deviceId: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), updatedAt: nowIso(), roadmap: { startDate: '', completed: {} }, vocab: { core: {}, class: {} }, phonics: { learned: [], reviews: [], quiz: { right: 0, total: 0 } }, activity: {} });
   let model = parse(KEY, null) || fresh();
+  model.roadmap ||= { startDate: '', completed: {} };
+  model.roadmap.completed ||= {};
+  model.vocab ||= { core: {}, class: {} };
+  model.vocab.core ||= {};
+  model.vocab.class ||= {};
+  model.phonics ||= { learned: [], reviews: [], quiz: { right: 0, total: 0 } };
+  model.phonics.learned ||= [];
+  model.phonics.reviews ||= [];
+  model.phonics.quiz ||= { right: 0, total: 0 };
+  model.activity ||= {};
 
   function normalizeCard(card = {}) {
     return { reps: card.reps || card.level || 0, lapses: card.lapses || 0, interval: card.interval || 0, ease: card.ease || 2.5, due: card.due || null, lastReviewed: card.lastReviewed || card.last || null, familiar: !!card.familiar, mastered: !!card.mastered };
@@ -53,9 +63,25 @@
     known.forEach(id => { if (!model.vocab.class[id]) { model.vocab.class[id] = normalizeCard({ reps: 3, interval: 30, mastered: true }); changed = true; } });
     const srs = parse('ielts_srs_v2', {});
     Object.entries(srs).forEach(([id, card]) => { if (!model.vocab.class[id]) { model.vocab.class[id] = normalizeCard(card); changed = true; } });
+    const phonics = normalizePhonics(parse('ielti_phonics_121_v1', {}));
+    if (phonics.learned.length || phonics.reviews.length || phonics.quiz.total) {
+      const current = normalizePhonics(model.phonics);
+      model.phonics = { learned: [...new Set([...current.learned, ...phonics.learned])], reviews: [...new Set([...current.reviews, ...phonics.reviews])], quiz: { right: Math.max(current.quiz.right, phonics.quiz.right), total: Math.max(current.quiz.total, phonics.quiz.total) } };
+      changed = true;
+    }
     if (changed) save(false);
   }
-  function save(emit = true) { model.updatedAt = nowIso(); localStorage.setItem(KEY, JSON.stringify(model)); if (emit) global.dispatchEvent(new CustomEvent('ielti-progress', { detail: model })); }
+  function mirrorLegacyProgress() {
+    localStorage.setItem('ielts_g_plan_progress_v2', JSON.stringify(model.roadmap.completed || {}));
+    if (model.roadmap.startDate) localStorage.setItem('ielts_g_plan_start_v1', model.roadmap.startDate);
+    localStorage.setItem('ielts_vocab_mastered_v1', JSON.stringify(Object.fromEntries(Object.entries(model.vocab.core || {}).filter(([, card]) => card?.mastered).map(([id]) => [id, true]))));
+    localStorage.setItem('ielts_srs_v2', JSON.stringify(model.vocab.class || {}));
+    const familiarIds = Object.entries(model.vocab.class || {}).filter(([, card]) => card?.familiar).map(([id]) => id);
+    localStorage.setItem('wclass_known_v1', JSON.stringify(familiarIds));
+    localStorage.setItem('wclass_familiar_v1', JSON.stringify(familiarIds));
+    localStorage.setItem('ielti_phonics_121_v1', JSON.stringify(normalizePhonics(model.phonics)));
+  }
+  function save(emit = true) { model.updatedAt = nowIso(); mirrorLegacyProgress(); localStorage.setItem(KEY, JSON.stringify(model)); if (emit) global.dispatchEvent(new CustomEvent('ielti-progress', { detail: model })); }
   function markActivity(kind) { const day = new Date().toISOString().slice(0, 10); model.activity[day] ||= { reviews: 0, courses: 0 }; model.activity[day][kind] = (model.activity[day][kind] || 0) + 1; }
   function reviewCard(deck, id, rating) {
     const cards = model.vocab[deck] ||= {};
@@ -71,11 +97,19 @@
     }
     card.lastReviewed = nowIso(); card.mastered = card.reps >= 3 && card.interval >= 21; cards[id] = card; markActivity('reviews'); save(); return card;
   }
-  function setRoadmap(completed, startDate) { model.roadmap.completed = completed || {}; if (startDate) model.roadmap.startDate = startDate; save(); }
+  function setRoadmap(completed, startDate) { model.roadmap.completed = completed || {}; if (typeof startDate === 'string') model.roadmap.startDate = startDate; save(); }
   function setMastered(deck, ids) { const cards = model.vocab[deck] ||= {}; const wanted = new Set(ids); Object.keys(cards).forEach(id => { if (cards[id].mastered && !wanted.has(id)) cards[id].mastered = false; }); wanted.forEach(id => { cards[id] = normalizeCard({ ...cards[id], reps: Math.max(3, cards[id]?.reps || 0), interval: Math.max(30, cards[id]?.interval || 0), mastered: true }); }); save(); }
   function setFamiliar(deck, id, familiar) { const cards = model.vocab[deck] ||= {}; cards[id] = normalizeCard({ ...cards[id], familiar }); save(); return cards[id]; }
   function setFamiliarList(deck, ids) { const cards = model.vocab[deck] ||= {}, wanted = new Set(ids); Object.keys(cards).forEach(id => { cards[id] = normalizeCard({ ...cards[id], familiar: wanted.has(id) }); }); save(); }
   function replaceDeck(deck, cards) { model.vocab[deck] = Object.fromEntries(Object.entries(cards || {}).map(([id, card]) => [id, normalizeCard(card)])); save(); }
+  function normalizePhonics(value = {}) {
+    const learned = Array.isArray(value.learned) ? [...new Set(value.learned.filter(Boolean))] : [];
+    const reviews = Array.isArray(value.reviews) ? [...new Set(value.reviews.filter(Boolean))] : [];
+    const quiz = value.quiz && typeof value.quiz === 'object' ? value.quiz : {};
+    return { learned, reviews, quiz: { right: Math.max(0, Number(quiz.right) || 0), total: Math.max(0, Number(quiz.total) || 0) } };
+  }
+  function getPhonics() { return normalizePhonics(model.phonics); }
+  function setPhonics(value) { model.phonics = normalizePhonics(value); save(); return model.phonics; }
   function getDeck(deck) { return model.vocab[deck] || {}; }
   function dueCount(deck) { const now = Date.now(); return Object.values(getDeck(deck)).filter(c => c.due && new Date(c.due).getTime() <= now).length; }
   function summary() { const completed = Object.values(model.roadmap.completed).filter(Boolean).length; const core = Object.values(model.vocab.core); const cls = Object.values(model.vocab.class); const start = model.roadmap.startDate ? new Date(model.roadmap.startDate + 'T00:00:00') : null; const day = start ? Math.max(1, Math.floor((Date.now() - start.getTime()) / DAY) + 1) : 1; return { day, week: Math.min(26, Math.ceil(day / 7)), completed, coreMastered: core.filter(c => c.mastered).length, classMastered: cls.filter(c => c.mastered).length, due: dueCount('core') + dueCount('class'), today: model.activity[new Date().toISOString().slice(0, 10)] || { reviews: 0, courses: 0 } }; }
@@ -97,7 +131,7 @@
     entries.forEach(([key, value]) => localStorage.setItem(key, value));
     return entries.length;
   }
-  function merge(remote) { if (!remote || remote.version !== 3) return false; const newer = (a, b) => !a ? b : !b ? a : new Date(b.lastReviewed || 0) > new Date(a.lastReviewed || 0) ? b : a; Object.entries(remote.roadmap?.completed || {}).forEach(([k, v]) => { if (v) model.roadmap.completed[k] = true; }); ['core', 'class'].forEach(deck => Object.entries(remote.vocab?.[deck] || {}).forEach(([id, card]) => { model.vocab[deck][id] = newer(model.vocab[deck][id], card); })); Object.entries(remote.activity || {}).forEach(([day, activity]) => { const local = model.activity[day] ||= { reviews: 0, courses: 0 }; local.reviews = Math.max(local.reviews || 0, activity.reviews || 0); local.courses = Math.max(local.courses || 0, activity.courses || 0); }); if (!model.roadmap.startDate && remote.roadmap?.startDate) model.roadmap.startDate = remote.roadmap.startDate; save(); return true; }
+  function merge(remote) { if (!remote || remote.version !== 3) return false; const newer = (a, b) => !a ? b : !b ? a : new Date(b.lastReviewed || 0) > new Date(a.lastReviewed || 0) ? b : a; Object.entries(remote.roadmap?.completed || {}).forEach(([k, v]) => { if (v) model.roadmap.completed[k] = true; }); ['core', 'class'].forEach(deck => Object.entries(remote.vocab?.[deck] || {}).forEach(([id, card]) => { model.vocab[deck][id] = newer(model.vocab[deck][id], card); })); if (remote.phonics) { const localPhonics = normalizePhonics(model.phonics), remotePhonics = normalizePhonics(remote.phonics); model.phonics = { learned: [...new Set([...localPhonics.learned, ...remotePhonics.learned])], reviews: [...new Set([...localPhonics.reviews, ...remotePhonics.reviews])], quiz: { right: Math.max(localPhonics.quiz.right, remotePhonics.quiz.right), total: Math.max(localPhonics.quiz.total, remotePhonics.quiz.total) } }; } Object.entries(remote.activity || {}).forEach(([day, activity]) => { const local = model.activity[day] ||= { reviews: 0, courses: 0 }; local.reviews = Math.max(local.reviews || 0, activity.reviews || 0); local.courses = Math.max(local.courses || 0, activity.courses || 0); }); if (!model.roadmap.startDate && remote.roadmap?.startDate) model.roadmap.startDate = remote.roadmap.startDate; save(); return true; }
 
   let englishVoice = null, pendingSpeech = null;
   function pickEnglishVoice() { if (!('speechSynthesis' in global)) return null; const voices = speechSynthesis.getVoices(); englishVoice = voices.find(voice => /en[-_]US/i.test(voice.lang) && /(Samantha|Google US English|Microsoft.*(?:Aria|Jenny)|Aria|Jenny)/i.test(voice.name)) || voices.find(voice => /en[-_]US/i.test(voice.lang)) || voices.find(voice => /^en/i.test(voice.lang)) || null; return englishVoice; }
@@ -195,7 +229,8 @@
     syncStatus(CLOUD_SYNC_ENABLED ? '准备自动同步…' : '本地模式 · 进度仅保存在此浏览器');
   }
   migrate();
-  global.IELTI = { KEY, get: () => model, save, merge, summary, wordId, migrateClassWords, getDeck, reviewCard, setRoadmap, setMastered, setFamiliar, setFamiliarList, replaceDeck, backup: { keys: [...BACKUP_KEYS], export: exportBackup, import: importBackup }, motion, speech: { speak: speakEnglish, pickVoice: pickEnglishVoice }, sync: { enabled: CLOUD_SYNC_ENABLED, run: autoSync, schedulePush: scheduleCloudPush } };
+  mirrorLegacyProgress();
+  global.IELTI = { KEY, get: () => model, save, merge, summary, wordId, migrateClassWords, getDeck, reviewCard, setRoadmap, setMastered, setFamiliar, setFamiliarList, replaceDeck, getPhonics, setPhonics, backup: { keys: [...BACKUP_KEYS], export: exportBackup, import: importBackup }, motion, speech: { speak: speakEnglish, pickVoice: pickEnglishVoice }, sync: { enabled: CLOUD_SYNC_ENABLED, run: autoSync, schedulePush: scheduleCloudPush } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', installChrome); else installChrome();
   global.addEventListener('ielti-progress', scheduleCloudPush);
   if (CLOUD_SYNC_ENABLED) { global.addEventListener('online', () => autoSync(localStorage.getItem(SYNC_DIRTY_KEY) === '1')); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') autoSync(localStorage.getItem(SYNC_DIRTY_KEY) === '1'); }); setInterval(() => { if (document.visibilityState === 'visible') autoSync(false); }, 60000); }

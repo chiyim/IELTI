@@ -1,4 +1,4 @@
-const CACHE='ielti-shell-v11';
+const CACHE='ielti-shell-v12';
 const SHELL=['./','./index.html','./apple-ui.css','./ielti-core.js','./manifest.webmanifest','./ielts-roadmap.html','./ielts-core-vocabulary.html','./ielts-vocabulary-categories.html','./ielts_word_memory_v2_ipa.html','./121-letter-combinations.html'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));

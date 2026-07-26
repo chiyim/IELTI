@@ -604,8 +604,10 @@ function jumpToWeek(weekNum) {
 
 document.getElementById("resetBtn").onclick = () => {
   if (confirm("确定要清空全部打卡记录吗？此操作不可恢复。")) {
-    progress = {}; saveProgress(progress);
-    localStorage.removeItem(START_KEY); START_DATE = todayISO();
+    progress = {};
+    localStorage.removeItem(START_KEY);
+    START_DATE = todayISO();
+    saveProgress(progress);
     renderDashboard(); renderWeeks(); renderPhaseDonut();
   }
 };
@@ -620,9 +622,15 @@ document.getElementById("postponeBtn").onclick = () => {
   const p = x => String(x).padStart(2, "0");
   START_DATE = d.getFullYear() + "-" + p(d.getMonth()+1) + "-" + p(d.getDate());
   localStorage.setItem(START_KEY, START_DATE);
+  if (window.IELTI) IELTI.setRoadmap(progress, START_DATE);
   renderDashboard(); renderWeeks(); renderPhaseDonut();
 };
 
+window.addEventListener("ielti-progress", () => {
+  progress = loadProgress();
+  START_DATE = localStorage.getItem(START_KEY) || START_DATE || todayISO();
+  renderDashboard(); renderWeeks(); renderPhaseDonut();
+});
 renderPhaseTabs();
 renderDashboard();
 renderWeeks();

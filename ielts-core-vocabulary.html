@@ -270,6 +270,10 @@ function renderAll() {
   renderCards();
 }
 
+window.addEventListener("ielti-progress", () => {
+  mastered = loadMastered();
+  renderCards();
+});
 renderAll();
 </script>
 </body>
