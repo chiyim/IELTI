@@ -584,6 +584,109 @@ body.page-today .ring b{
     display:none!important;
   }
 }
+
+/* MOBILE TITLE SPACING FINAL LOCK — must stay at the end of apple-ui.css. */
+@media(max-width:760px){
+  body.apple-ui .eyebrow,
+  body.apple-ui .page-kicker,
+  body.page-review .brand small,
+  body.page-phonics .eyebrow{
+    display:block!important;
+    margin-top:0!important;
+    margin-right:-6.25rem!important;
+    margin-bottom:6px!important;
+    margin-left:0!important;
+    line-height:1.14!important;
+  }
+
+  body.page-today .top h1,
+  body.page-roadmap .hero h1,
+  body.page-core .hero h1,
+  body.page-review .brand h1,
+  body.page-class .htop h1,
+  body.page-phonics .phonics-head h1{
+    margin-top:0!important;
+    margin-bottom:0!important;
+  }
+
+  body.page-today .date,
+  body.page-roadmap .hero .sub,
+  body.page-core .hero .sub,
+  body.page-review .brand p,
+  body.page-class .statline,
+  body.page-phonics .head-meta{
+    margin-top:3px!important;
+  }
+
+  body .apple-mobile-title-row,
+  body.apple-ui .apple-mobile-title-row{
+    display:block!important;
+    position:relative!important;
+    min-height:auto!important;
+    align-items:flex-start!important;
+  }
+
+  body.apple-ui .apple-mobile-title-host{
+    position:relative!important;
+    padding-right:6.25rem!important;
+  }
+
+  body.apple-ui .apple-mobile-title-row .apple-theme-toggle,
+  body.apple-ui .apple-mobile-title-row #themeBtn{
+    position:absolute!important;
+    top:calc((var(--ielti-title-size) * var(--ielti-title-leading) - 2.35rem) / 2)!important;
+    right:-2.55rem!important;
+    margin:0!important;
+    align-self:auto!important;
+  }
+
+  body.apple-ui .apple-mobile-title-row .apple-rail-logo{
+    position:absolute!important;
+    top:calc((var(--ielti-title-size) * var(--ielti-title-leading) - 3.2rem) / 2)!important;
+    right:-6.25rem!important;
+    margin:0!important;
+    align-self:auto!important;
+  }
+}
+
+/* MOBILE TITLE SPACING LOCK — final override for all page headers. */
+@media(max-width:760px){
+  body.apple-ui .eyebrow,
+  body.apple-ui .page-kicker,
+  body.page-review .brand small,
+  body.page-phonics .eyebrow{
+    display:block!important;
+    margin-top:0!important;
+    margin-right:-6.25rem!important;
+    margin-bottom:6px!important;
+    margin-left:0!important;
+    line-height:1.14!important;
+  }
+
+  body.page-today .top h1,
+  body.page-roadmap .hero h1,
+  body.page-core .hero h1,
+  body.page-review .brand h1,
+  body.page-class .htop h1,
+  body.page-phonics .phonics-head h1{
+    margin-top:0!important;
+    margin-bottom:0!important;
+  }
+
+  body.page-today .date,
+  body.page-roadmap .hero .sub,
+  body.page-core .hero .sub,
+  body.page-review .brand p,
+  body.page-class .statline,
+  body.page-phonics .head-meta{
+    margin-top:3px!important;
+  }
+
+  body .apple-mobile-title-row,
+  body.apple-ui .apple-mobile-title-row{
+    min-height:auto!important;
+  }
+}
 @media(max-width:370px){
   .apple-tabbar{
     left:.55rem!important;
@@ -987,11 +1090,9 @@ body.page-core .vcard .top{
   align-items:center!important;
   justify-content:space-between!important;
   gap:.5rem!important;
-  padding-right:0!important;
 }
 body.page-core .vcard .word-group{
   min-width:0!important;
-  padding-right:0!important;
 }
 body.page-core .vcard .speak-btn{
   position:absolute!important;
@@ -1001,8 +1102,7 @@ body.page-core .vcard .speak-btn{
   transform:translateY(-50%)!important;
 }
 body.page-core .vcard .evp{
-  margin-right:0!important;
-  padding-right:0!important;
+  margin-right:-6.25rem!important;
 }
 body.page-class .w .spk{
   display:grid!important;
@@ -1361,6 +1461,30 @@ body.page-phonics .phonics-head h1{
     margin-left:.3rem!important;
     display:block!important;
     border-radius:50%!important;
+  }
+}
+
+@media(max-width:760px){
+  body.apple-ui .eyebrow,
+  body.apple-ui .page-kicker,
+  body.page-review .brand small,
+  body.page-phonics .eyebrow{
+    margin:0 0 6px!important;
+    line-height:1.14!important;
+  }
+
+  body.page-today .date,
+  body.page-roadmap .hero .sub,
+  body.page-core .hero .sub,
+  body.page-review .brand p,
+  body.page-class .statline,
+  body.page-phonics .head-meta{
+    margin:6px 0 0!important;
+  }
+
+  body .apple-mobile-title-row,
+  body.apple-ui .apple-mobile-title-row{
+    min-height:auto!important;
   }
 }
 
@@ -1801,5 +1925,69 @@ body.page-class .w .ipa{
   }
   .apple-nav-indicator{
     display:none!important;
+  }
+}
+
+/* MOBILE TITLE SPACING FINAL LOCK — must stay after MOBILE NAV LOCK v4. */
+@media(max-width:760px){
+  body.apple-ui .eyebrow,
+  body.apple-ui .page-kicker,
+  body.page-review .brand small,
+  body.page-phonics .eyebrow{
+    display:block!important;
+    margin-top:0!important;
+    margin-right:-6.25rem!important;
+    margin-bottom:6px!important;
+    margin-left:0!important;
+    line-height:1.14!important;
+  }
+
+  body.page-today .top h1,
+  body.page-roadmap .hero h1,
+  body.page-core .hero h1,
+  body.page-review .brand h1,
+  body.page-class .htop h1,
+  body.page-phonics .phonics-head h1{
+    margin-top:0!important;
+    margin-bottom:0!important;
+  }
+
+  body.page-today .date,
+  body.page-roadmap .hero .sub,
+  body.page-core .hero .sub,
+  body.page-review .brand p,
+  body.page-class .statline,
+  body.page-phonics .head-meta{
+    margin-top:3px!important;
+  }
+
+  body .apple-mobile-title-row,
+  body.apple-ui .apple-mobile-title-row{
+    display:block!important;
+    position:relative!important;
+    min-height:auto!important;
+    align-items:flex-start!important;
+  }
+
+  body.apple-ui .apple-mobile-title-host{
+    position:relative!important;
+    padding-right:6.25rem!important;
+  }
+
+  body.apple-ui .apple-mobile-title-row .apple-theme-toggle,
+  body.apple-ui .apple-mobile-title-row #themeBtn{
+    position:absolute!important;
+    top:calc((var(--ielti-title-size) * var(--ielti-title-leading) - 2.35rem) / 2)!important;
+    right:-2.55rem!important;
+    margin:0!important;
+    align-self:auto!important;
+  }
+
+  body.apple-ui .apple-mobile-title-row .apple-rail-logo{
+    position:absolute!important;
+    top:calc((var(--ielti-title-size) * var(--ielti-title-leading) - 3.2rem) / 2)!important;
+    right:-6.25rem!important;
+    margin:0!important;
+    align-self:auto!important;
   }
 }
