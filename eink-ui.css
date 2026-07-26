@@ -153,6 +153,32 @@
   font-weight:800!important;
 }
 
+@media(max-width:760px){
+  :root[data-display="eink"] .apple-tabbar a.active,
+  :root[data-display="eink"] .apple-tabbar a.is-pressing{
+    background:transparent!important;
+    color:#050505!important;
+    outline:0!important;
+    font-weight:800!important;
+  }
+
+  :root[data-display="eink"] .apple-tabbar a.active::after{
+    content:"";
+    position:absolute!important;
+    left:50%!important;
+    bottom:calc(.18rem - 5px)!important;
+    width:.28rem!important;
+    height:.28rem!important;
+    border-radius:50%!important;
+    background:#050505!important;
+    transform:translateX(-50%)!important;
+  }
+
+  :root[data-display="eink"] .apple-tabbar a.active em{
+    padding-bottom:.22rem!important;
+  }
+}
+
 :root[data-display="eink"] .page-kicker,
 :root[data-display="eink"] .eyebrow,
 :root[data-display="eink"] small,
