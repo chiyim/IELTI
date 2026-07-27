@@ -123,8 +123,8 @@ main{max-width:920px;margin:0 auto;padding:14px}
   h1{font-size:16px}
 }
 </style>
-<link rel="stylesheet" href="apple-ui.css?v=20260727-31">
-  <link rel="stylesheet" href="eink-ui.css?v=20260727-31">
+<link rel="stylesheet" href="apple-ui.css?v=20260727-32">
+  <link rel="stylesheet" href="eink-ui.css?v=20260727-32">
 </head>
 <body class="apple-ui page-class"><header>
   <div class="htop">
@@ -179,7 +179,7 @@ main{max-width:920px;margin:0 auto;padding:14px}
   <div id="transBody"></div>
 </div>
 
-<script src="ielti-core.js?v=20260727-31"></script>
+<script src="ielti-config.js?v=20260727-32"></script><script src="ielti-core.js?v=20260727-32"></script>
 <script>
 // ---- 发音 (Web Speech API, 离线使用系统语音) ----
 let autoSpeak=true;
@@ -190,7 +190,7 @@ if(window.IELTI)IELTI.migrateClassWords(DATA);
 let known = new Set(window.IELTI?Object.entries(IELTI.getDeck('class')).filter(([,card])=>card.familiar).map(([wordId])=>wordId):JSON.parse(localStorage.getItem(LS_FAMILIAR)||'[]'));
 const id = w => window.IELTI?IELTI.wordId(w):[w.day,w.group,w.en].map(value=>String(value).trim().toLowerCase()).join('|');
 
-// 云同步由 ielti-core.js 统一管理；本地页面不会发起同步请求。
+// 进度同步由 ielti-core.js 统一管理；具体同步地址在 ielti-config.js 配置。
 function saveKnownLocal(){localStorage.setItem(LS_FAMILIAR,JSON.stringify([...known]));if(window.IELTI)IELTI.setFamiliarList('class',[...known]);}
 function persistKnown(){saveKnownLocal();}
 const LS_DAY='wclass_day_v1';

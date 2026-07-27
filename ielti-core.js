@@ -21,16 +21,53 @@
     return current;
   }
   applyDisplayMode(savedDisplay, false);
+  const CONFIG = global.IELTI_CONFIG || {};
   const KEY = 'ielti_progress_v3';
-  const SYNC_URL = 'https://word-sync.chilamc-y.workers.dev';
-  const SYNC_SCOPE = 'ielti-chilam-personal-site-v1';
+  const DEFAULT_SYNC_URL = 'https://word-sync.chilamc-y.workers.dev';
+  const SYNC_SCOPE = CONFIG.syncScope || 'ielti-chilam-personal-site-v1';
   const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
-  const CLOUD_SYNC_ENABLED = location.protocol === 'https:' && !LOCAL_HOSTS.has(location.hostname);
+  const isLocalPage = location.protocol === 'file:' || LOCAL_HOSTS.has(location.hostname);
+  const trimSlash = value => String(value || '').replace(/\/+$/, '');
+  const withSlash = value => trimSlash(value) ? trimSlash(value) + '/' : '';
+  const NAS_BASE_URL = withSlash(CONFIG.nasBaseUrl || 'http://100.71.87.40/IELTI/');
+  const NAS_HTTPS_BASE_URL = withSlash(CONFIG.nasHttpsBaseUrl || '');
+  const configuredSyncUrl = CONFIG.syncUrl || (NAS_BASE_URL ? NAS_BASE_URL + 'ielti-sync.php' : '');
+  const fallbackSyncUrl = Object.prototype.hasOwnProperty.call(CONFIG, 'cloudSyncFallbackUrl') ? CONFIG.cloudSyncFallbackUrl : DEFAULT_SYNC_URL;
+  const sameNasHost = () => {
+    try { return NAS_BASE_URL && new URL(NAS_BASE_URL).hostname === location.hostname; } catch { return false; }
+  };
+  function pickSyncUrl() {
+    const wanted = configuredSyncUrl || fallbackSyncUrl;
+    if (!wanted) return '';
+    try {
+      const url = new URL(wanted, location.href);
+      if (location.protocol === 'https:' && url.protocol === 'http:') {
+        if (NAS_HTTPS_BASE_URL) return new URL('ielti-sync.php', NAS_HTTPS_BASE_URL).href;
+        return fallbackSyncUrl && fallbackSyncUrl !== wanted ? fallbackSyncUrl : '';
+      }
+      return url.href;
+    } catch { return fallbackSyncUrl; }
+  }
+  const SYNC_URL = pickSyncUrl();
+  const SYNC_BLOCKED_BY_MIXED_CONTENT = !!configuredSyncUrl && !SYNC_URL && location.protocol === 'https:';
+  const CLOUD_SYNC_ENABLED = !!SYNC_URL && !LOCAL_HOSTS.has(location.hostname);
   const SYNC_DIRTY_KEY = 'ielti_sync_dirty_v1';
   const BACKUP_KEYS = ['ielti_progress_v3', 'ielts_g_plan_progress_v2', 'ielts_g_plan_start_v1', 'ielts_vocab_mastered_v1', 'wclass_known_v1', 'wclass_familiar_v1', 'ielts_srs_v2', 'ielts_review_prefs_v1', 'ielti_phonics_121_v1'];
   const DAY = 86400000;
   const parse = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; } };
   const nowIso = () => new Date().toISOString();
+  function resolveMediaUrl(path) {
+    if (!path) return '';
+    try {
+      const raw = String(path);
+      if (/^[a-z][a-z0-9+.-]*:/i.test(raw)) return raw;
+      if (location.protocol === 'file:' || sameNasHost()) return raw;
+      const base = location.protocol === 'https:' && NAS_HTTPS_BASE_URL ? NAS_HTTPS_BASE_URL : NAS_BASE_URL;
+      return base ? new URL(raw, base).href : raw;
+    } catch {
+      return String(path);
+    }
+  }
   const fresh = () => ({ version: 3, deviceId: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), updatedAt: nowIso(), roadmap: { startDate: '', completed: {} }, vocab: { core: {}, class: {} }, phonics: { learned: [], reviews: [], quiz: { right: 0, total: 0 } }, activity: {} });
   let model = parse(KEY, null) || fresh();
   model.roadmap ||= { startDate: '', completed: {} };
@@ -173,13 +210,14 @@
   function syncStatus(text, state = '') { document.querySelectorAll('[data-ielti-sync],#syncState').forEach(el => { el.className = `ielti-sync-state ${state}`; el.textContent = `${CLOUD_SYNC_ENABLED ? '☁︎' : '◉'} ${text}`; }); }
   function scheduleCloudPush() { if (!CLOUD_SYNC_ENABLED || applyingRemote) return; localStorage.setItem(SYNC_DIRTY_KEY, '1'); clearTimeout(syncTimer); syncTimer = setTimeout(() => autoSync(true), 1600); }
   async function cloudPull() { const response = await fetch(SYNC_URL, { headers: { Authorization: `Bearer ${SYNC_SCOPE}` }, cache: 'no-store' }); if (!response.ok) throw new Error(`pull ${response.status}`); const remote = await response.json(); if (remote.version === 3 && !remote.empty) { applyingRemote = true; try { merge(remote); } finally { applyingRemote = false; } return true; } return false; }
-  async function cloudPush() { const response = await fetch(SYNC_URL, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SYNC_SCOPE}` }, body: JSON.stringify(model) }); if (!response.ok) throw new Error(`push ${response.status}`); localStorage.removeItem(SYNC_DIRTY_KEY); }
+  async function cloudPush() { const response = await fetch(SYNC_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SYNC_SCOPE}` }, body: JSON.stringify(model) }); if (!response.ok) throw new Error(`push ${response.status}`); localStorage.removeItem(SYNC_DIRTY_KEY); }
   async function autoSync(forcePush = false) {
+    if (SYNC_BLOCKED_BY_MIXED_CONTENT) { syncStatus('需要 NAS HTTPS 后才能自动同步', 'error'); return false; }
     if (!CLOUD_SYNC_ENABLED) { syncStatus('本地模式 · 进度仅保存在此浏览器'); return true; }
     if (!navigator.onLine) { syncStatus('离线，联网后自动同步'); return false; }
     if (syncing) { resyncRequested = true; return false; }
     syncing = true; syncStatus('正在自动同步…');
-    try { const hadRemote = await cloudPull(); if (forcePush || !hadRemote || localStorage.getItem(SYNC_DIRTY_KEY) === '1') await cloudPush(); syncStatus('已自动同步', 'ok'); return true; }
+    try { await cloudPull(); await cloudPush(); syncStatus('已自动同步', 'ok'); return true; }
     catch (error) { console.warn('IELTI sync:', error); syncStatus('暂时无法同步，稍后自动重试', 'error'); return false; }
     finally { syncing = false; if (resyncRequested) { resyncRequested = false; scheduleCloudPush(); } }
   }
@@ -283,7 +321,7 @@
   }
   migrate();
   mirrorLegacyProgress();
-  global.IELTI = { KEY, get: () => model, save, merge, summary, wordId, migrateClassWords, getDeck, reviewCard, setRoadmap, setMastered, setFamiliar, setFamiliarList, replaceDeck, getPhonics, setPhonics, backup: { keys: [...BACKUP_KEYS], export: exportBackup, import: importBackup }, motion, speech: { speak: speakEnglish, pickVoice: pickEnglishVoice }, sync: { enabled: CLOUD_SYNC_ENABLED, run: autoSync, schedulePush: scheduleCloudPush } };
+  global.IELTI = { KEY, get: () => model, save, merge, summary, wordId, migrateClassWords, getDeck, reviewCard, setRoadmap, setMastered, setFamiliar, setFamiliarList, replaceDeck, getPhonics, setPhonics, media: { resolve: resolveMediaUrl, nasBaseUrl: NAS_BASE_URL, nasHttpsBaseUrl: NAS_HTTPS_BASE_URL }, backup: { keys: [...BACKUP_KEYS], export: exportBackup, import: importBackup }, motion, speech: { speak: speakEnglish, pickVoice: pickEnglishVoice }, sync: { enabled: CLOUD_SYNC_ENABLED, url: SYNC_URL, run: autoSync, schedulePush: scheduleCloudPush } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', installChrome); else installChrome();
   global.addEventListener('ielti-progress', scheduleCloudPush);
   if (CLOUD_SYNC_ENABLED) { global.addEventListener('online', () => autoSync(localStorage.getItem(SYNC_DIRTY_KEY) === '1')); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') autoSync(localStorage.getItem(SYNC_DIRTY_KEY) === '1'); }); setInterval(() => { if (document.visibilityState === 'visible') autoSync(false); }, 60000); }
