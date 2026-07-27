@@ -224,6 +224,7 @@
   function syncErrorMessage(error) {
     const msg = String(error?.message || error || '');
     if (/Failed to fetch|Load failed|NetworkError/i.test(msg)) return '无法连接 NAS 同步接口';
+    if (/returned html|Unexpected token.*</i.test(msg)) return '同步接口返回了网页，请确认地址包含 /IELTI/';
     if (/pull 401|push 401/.test(msg)) return '同步身份无效';
     if (/pull 404|push 404/.test(msg)) return '同步接口不存在';
     if (/pull 5|push 5/.test(msg)) return 'NAS 同步接口暂时出错';
@@ -231,8 +232,17 @@
     return `暂时无法同步：${msg || '稍后自动重试'}`;
   }
   function scheduleCloudPush() { if (!CLOUD_SYNC_ENABLED || applyingRemote) return; localStorage.setItem(SYNC_DIRTY_KEY, '1'); clearTimeout(syncTimer); syncTimer = setTimeout(() => autoSync(true), 1600); }
-  async function cloudPull() { const response = await fetch(SYNC_URL, { headers: { Authorization: `Bearer ${SYNC_SCOPE}` }, cache: 'no-store' }); if (!response.ok) throw new Error(`pull ${response.status}`); const remote = await response.json(); if (remote.version === 3 && !remote.empty) { applyingRemote = true; try { merge(remote); } finally { applyingRemote = false; } return true; } return false; }
-  async function cloudPush() { const response = await fetch(SYNC_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SYNC_SCOPE}` }, body: JSON.stringify(compactModelForSync()) }); if (!response.ok) throw new Error(`push ${response.status}`); localStorage.removeItem(SYNC_DIRTY_KEY); }
+  async function readSyncJson(response, stage) {
+    const text = await response.text();
+    if (!response.ok) throw new Error(`${stage} ${response.status}`);
+    try { return text ? JSON.parse(text) : {}; }
+    catch (error) {
+      if (/^\s*</.test(text)) throw new Error(`${stage} returned html`);
+      throw error;
+    }
+  }
+  async function cloudPull() { const response = await fetch(SYNC_URL, { headers: { Authorization: `Bearer ${SYNC_SCOPE}` }, cache: 'no-store' }); const remote = await readSyncJson(response, 'pull'); if (remote.version === 3 && !remote.empty) { applyingRemote = true; try { merge(remote); } finally { applyingRemote = false; } return true; } return false; }
+  async function cloudPush() { const response = await fetch(SYNC_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SYNC_SCOPE}` }, body: JSON.stringify(compactModelForSync()) }); await readSyncJson(response, 'push'); localStorage.removeItem(SYNC_DIRTY_KEY); }
   async function autoSync(forcePush = false) {
     if (SYNC_BLOCKED_BY_MIXED_CONTENT) { syncStatus('需要 NAS HTTPS 后才能自动同步', 'error'); return false; }
     if (!CLOUD_SYNC_ENABLED) { syncStatus('本地模式 · 进度仅保存在此浏览器'); return true; }

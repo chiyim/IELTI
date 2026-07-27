@@ -49,20 +49,19 @@ if ($method === 'POST' || $method === 'PUT') {
     echo json_encode(['error' => 'invalid progress'], JSON_UNESCAPED_UNICODE);
     exit;
   }
-  $signal = function (array $value): int {
-    $count = 0;
-    $count += count(array_filter($value['roadmap']['completed'] ?? []));
-    $count += count($value['vocab']['core'] ?? []);
-    $count += count($value['vocab']['class'] ?? []);
-    $count += count($value['phonics']['learned'] ?? []);
-    $count += count($value['phonics']['reviews'] ?? []);
-    $count += count($value['activity'] ?? []);
-    return $count;
+  $signal = function ($value): int {
+    if (!is_array($value)) return 0;
+    return count(array_filter($value['roadmap']['completed'] ?? []))
+      + count($value['vocab']['core'] ?? [])
+      + count($value['vocab']['class'] ?? [])
+      + count($value['phonics']['learned'] ?? [])
+      + count($value['phonics']['reviews'] ?? [])
+      + count($value['activity'] ?? []);
   };
   if (is_file($file)) {
     $existing = json_decode((string) file_get_contents($file), true);
-    if (is_array($existing) && $signal($existing) > 0 && $signal($data) === 0) {
-      echo json_encode(['ok' => true, 'ignored' => 'empty-progress'], JSON_UNESCAPED_UNICODE);
+    if (is_array($existing) && $signal($existing) > $signal($data)) {
+      echo json_encode(['ok' => true, 'ignored' => 'smaller-progress'], JSON_UNESCAPED_UNICODE);
       exit;
     }
   }
