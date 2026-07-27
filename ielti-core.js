@@ -68,7 +68,7 @@
       return String(path);
     }
   }
-  const fresh = () => ({ version: 3, deviceId: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()), updatedAt: nowIso(), roadmap: { startDate: '', completed: {} }, vocab: { core: {}, class: {} }, phonics: { learned: [], reviews: [], quiz: { right: 0, total: 0 } }, activity: {} });
+  const fresh = () => ({ version: 3, deviceId: global.crypto?.randomUUID ? global.crypto.randomUUID() : String(Date.now()), updatedAt: nowIso(), roadmap: { startDate: '', completed: {} }, vocab: { core: {}, class: {} }, phonics: { learned: [], reviews: [], quiz: { right: 0, total: 0 } }, activity: {} });
   let model = parse(KEY, null) || fresh();
   model.roadmap ||= { startDate: '', completed: {} };
   model.roadmap.completed ||= {};
