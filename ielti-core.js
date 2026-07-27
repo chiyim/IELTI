@@ -26,12 +26,16 @@
   const DEFAULT_SYNC_URL = 'https://word-sync.chilamc-y.workers.dev';
   const SYNC_SCOPE = CONFIG.syncScope || 'ielti-chilam-personal-site-v1';
   const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
+  const NAS_HTTP_ORIGIN = 'http://100.71.87.40';
+  const NAS_HTTPS_ORIGIN = 'https://ds418play.tail6d2cd4.ts.net';
   const isLocalPage = location.protocol === 'file:' || LOCAL_HOSTS.has(location.hostname);
   const trimSlash = value => String(value || '').replace(/\/+$/, '');
   const withSlash = value => trimSlash(value) ? trimSlash(value) + '/' : '';
-  const NAS_BASE_URL = withSlash(CONFIG.nasBaseUrl || 'http://100.71.87.40/IELTI/');
-  const NAS_HTTPS_BASE_URL = withSlash(CONFIG.nasHttpsBaseUrl || '');
-  const configuredSyncUrl = CONFIG.syncUrl || (NAS_BASE_URL ? NAS_BASE_URL + 'ielti-sync.php' : '');
+  const NAS_BASE_URL = withSlash(CONFIG.nasBaseUrl || `${NAS_HTTP_ORIGIN}/IELTI/`);
+  const NAS_HTTPS_BASE_URL = withSlash(CONFIG.nasHttpsBaseUrl || `${NAS_HTTPS_ORIGIN}/IELTI/`);
+  const currentIsNas = location.hostname === '100.71.87.40' || location.hostname === 'ds418play.tail6d2cd4.ts.net';
+  const currentSiteSyncUrl = currentIsNas ? new URL('/IELTI/ielti-sync.php', location.origin).href : '';
+  const configuredSyncUrl = currentSiteSyncUrl || CONFIG.syncUrl || (NAS_HTTPS_BASE_URL ? NAS_HTTPS_BASE_URL + 'ielti-sync.php' : '');
   const fallbackSyncUrl = Object.prototype.hasOwnProperty.call(CONFIG, 'cloudSyncFallbackUrl') ? CONFIG.cloudSyncFallbackUrl : DEFAULT_SYNC_URL;
   const sameNasHost = () => {
     try { return NAS_BASE_URL && new URL(NAS_BASE_URL).hostname === location.hostname; } catch { return false; }
@@ -217,6 +221,15 @@
 
   let syncTimer = null, syncing = false, resyncRequested = false, applyingRemote = false;
   function syncStatus(text, state = '') { document.querySelectorAll('[data-ielti-sync],#syncState').forEach(el => { el.className = `ielti-sync-state ${state}`; el.textContent = `${CLOUD_SYNC_ENABLED ? '☁︎' : '◉'} ${text}`; }); }
+  function syncErrorMessage(error) {
+    const msg = String(error?.message || error || '');
+    if (/Failed to fetch|Load failed|NetworkError/i.test(msg)) return '无法连接 NAS 同步接口';
+    if (/pull 401|push 401/.test(msg)) return '同步身份无效';
+    if (/pull 404|push 404/.test(msg)) return '同步接口不存在';
+    if (/pull 5|push 5/.test(msg)) return 'NAS 同步接口暂时出错';
+    if (/pull 0|push 0/.test(msg)) return '同步请求被浏览器拦截';
+    return `暂时无法同步：${msg || '稍后自动重试'}`;
+  }
   function scheduleCloudPush() { if (!CLOUD_SYNC_ENABLED || applyingRemote) return; localStorage.setItem(SYNC_DIRTY_KEY, '1'); clearTimeout(syncTimer); syncTimer = setTimeout(() => autoSync(true), 1600); }
   async function cloudPull() { const response = await fetch(SYNC_URL, { headers: { Authorization: `Bearer ${SYNC_SCOPE}` }, cache: 'no-store' }); if (!response.ok) throw new Error(`pull ${response.status}`); const remote = await response.json(); if (remote.version === 3 && !remote.empty) { applyingRemote = true; try { merge(remote); } finally { applyingRemote = false; } return true; } return false; }
   async function cloudPush() { const response = await fetch(SYNC_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SYNC_SCOPE}` }, body: JSON.stringify(compactModelForSync()) }); if (!response.ok) throw new Error(`push ${response.status}`); localStorage.removeItem(SYNC_DIRTY_KEY); }
@@ -227,7 +240,7 @@
     if (syncing) { resyncRequested = true; return false; }
     syncing = true; syncStatus('正在自动同步…');
     try { await cloudPull(); await cloudPush(); syncStatus('已自动同步', 'ok'); return true; }
-    catch (error) { console.warn('IELTI sync:', error); syncStatus('暂时无法同步，稍后自动重试', 'error'); return false; }
+    catch (error) { console.warn('IELTI sync:', error, SYNC_URL); syncStatus(syncErrorMessage(error), 'error'); return false; }
     finally { syncing = false; if (resyncRequested) { resyncRequested = false; scheduleCloudPush(); } }
   }
   const reducedMotion = () => global.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
