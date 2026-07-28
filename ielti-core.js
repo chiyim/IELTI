@@ -26,17 +26,19 @@
   const DEFAULT_SYNC_URL = 'https://word-sync.chilamc-y.workers.dev';
   const SYNC_SCOPE = CONFIG.syncScope || 'ielti-chilam-personal-site-v1';
   const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
-  const NAS_HTTP_ORIGIN = 'http://100.71.87.40';
-  const NAS_HTTPS_ORIGIN = 'https://ds418play.tail6d2cd4.ts.net';
-  const isLocalPage = location.protocol === 'file:' || LOCAL_HOSTS.has(location.hostname);
+  const NAS_HTTP_ORIGIN = 'http://192.168.10.115';
+  const NAS_HTTPS_ORIGIN = '';
+  const isFilePage = location.protocol === 'file:';
+  const isDevHost = LOCAL_HOSTS.has(location.hostname);
+  const isLocalPage = isFilePage || isDevHost;
+  const DEFAULT_ICON = isFilePage ? 'icon_local.png' : 'icon.png';
   const trimSlash = value => String(value || '').replace(/\/+$/, '');
   const withSlash = value => trimSlash(value) ? trimSlash(value) + '/' : '';
   const NAS_BASE_URL = withSlash(CONFIG.nasBaseUrl || `${NAS_HTTP_ORIGIN}/IELTI/`);
-  const NAS_HTTPS_BASE_URL = withSlash(CONFIG.nasHttpsBaseUrl || `${NAS_HTTPS_ORIGIN}/IELTI/`);
-  const currentIsNas = location.hostname === '100.71.87.40' || location.hostname === 'ds418play.tail6d2cd4.ts.net';
-  const currentSiteSyncUrl = currentIsNas ? new URL('/IELTI/ielti-sync.php', location.origin).href : '';
-  const configuredSyncUrl = currentSiteSyncUrl || CONFIG.syncUrl || (NAS_HTTPS_BASE_URL ? NAS_HTTPS_BASE_URL + 'ielti-sync.php' : '');
+  const NAS_HTTPS_BASE_URL = withSlash(CONFIG.nasHttpsBaseUrl || (NAS_HTTPS_ORIGIN ? `${NAS_HTTPS_ORIGIN}/IELTI/` : ''));
+  const currentIsNas = location.hostname === '192.168.10.115';
   const fallbackSyncUrl = Object.prototype.hasOwnProperty.call(CONFIG, 'cloudSyncFallbackUrl') ? CONFIG.cloudSyncFallbackUrl : DEFAULT_SYNC_URL;
+  const configuredSyncUrl = CONFIG.syncUrl || fallbackSyncUrl;
   const sameNasHost = () => {
     try { return NAS_BASE_URL && new URL(NAS_BASE_URL).hostname === location.hostname; } catch { return false; }
   };
@@ -54,7 +56,7 @@
   }
   const SYNC_URL = pickSyncUrl();
   const SYNC_BLOCKED_BY_MIXED_CONTENT = !!configuredSyncUrl && !SYNC_URL && location.protocol === 'https:';
-  const CLOUD_SYNC_ENABLED = !!SYNC_URL && !LOCAL_HOSTS.has(location.hostname);
+  const CLOUD_SYNC_ENABLED = !!SYNC_URL && !isDevHost;
   const SYNC_DIRTY_KEY = 'ielti_sync_dirty_v1';
   const BACKUP_KEYS = ['ielti_progress_v3', 'ielts_g_plan_progress_v2', 'ielts_g_plan_start_v1', 'ielts_vocab_mastered_v1', 'wclass_known_v1', 'wclass_familiar_v1', 'ielts_srs_v2', 'ielts_review_prefs_v1', 'ielti_phonics_121_v1'];
   const DAY = 86400000;
@@ -66,11 +68,25 @@
       const raw = String(path);
       if (/^[a-z][a-z0-9+.-]*:/i.test(raw)) return raw;
       if (location.protocol === 'file:' || sameNasHost()) return raw;
-      const base = location.protocol === 'https:' && NAS_HTTPS_BASE_URL ? NAS_HTTPS_BASE_URL : NAS_BASE_URL;
+      const base = NAS_BASE_URL;
       return base ? new URL(raw, base).href : raw;
     } catch {
       return String(path);
     }
+  }
+  function applyRuntimeIcon() {
+    const setIconLink = (selector, rel) => {
+      let link = document.querySelector(selector);
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = rel;
+        document.head.appendChild(link);
+      }
+      link.href = DEFAULT_ICON;
+      if (rel === 'icon') link.type = 'image/png';
+    };
+    setIconLink('link[rel~="icon"]', 'icon');
+    setIconLink('link[rel="apple-touch-icon"]', 'apple-touch-icon');
   }
   const fresh = () => ({ version: 3, deviceId: global.crypto?.randomUUID ? global.crypto.randomUUID() : String(Date.now()), updatedAt: nowIso(), roadmap: { startDate: '', completed: {} }, vocab: { core: {}, class: {} }, phonics: { learned: [], reviews: [], quiz: { right: 0, total: 0 } }, activity: {} });
   let model = parse(KEY, null) || fresh();
@@ -223,11 +239,11 @@
   function syncStatus(text, state = '') { document.querySelectorAll('[data-ielti-sync],#syncState').forEach(el => { el.className = `ielti-sync-state ${state}`; el.textContent = `${CLOUD_SYNC_ENABLED ? '☁︎' : '◉'} ${text}`; }); }
   function syncErrorMessage(error) {
     const msg = String(error?.message || error || '');
-    if (/Failed to fetch|Load failed|NetworkError/i.test(msg)) return '无法连接 NAS 同步接口';
+    if (/Failed to fetch|Load failed|NetworkError/i.test(msg)) return '无法连接同步服务器';
     if (/returned html|Unexpected token.*</i.test(msg)) return '同步接口返回了网页，请确认地址包含 /IELTI/';
     if (/pull 401|push 401/.test(msg)) return '同步身份无效';
     if (/pull 404|push 404/.test(msg)) return '同步接口不存在';
-    if (/pull 5|push 5/.test(msg)) return 'NAS 同步接口暂时出错';
+    if (/pull 5|push 5/.test(msg)) return '同步服务器暂时出错';
     if (/pull 0|push 0/.test(msg)) return '同步请求被浏览器拦截';
     return `暂时无法同步：${msg || '稍后自动重试'}`;
   }
@@ -241,8 +257,51 @@
       throw error;
     }
   }
-  async function cloudPull() { const response = await fetch(SYNC_URL, { headers: { Authorization: `Bearer ${SYNC_SCOPE}` }, cache: 'no-store' }); const remote = await readSyncJson(response, 'pull'); if (remote.version === 3 && !remote.empty) { applyingRemote = true; try { merge(remote); } finally { applyingRemote = false; } return true; } return false; }
-  async function cloudPush() { const response = await fetch(SYNC_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SYNC_SCOPE}` }, body: JSON.stringify(compactModelForSync()) }); await readSyncJson(response, 'push'); localStorage.removeItem(SYNC_DIRTY_KEY); }
+  const withPath = (base, path) => {
+    try {
+      const url = new URL(base);
+      url.pathname = `${url.pathname.replace(/\/+$/, '')}/${path}`.replace(/^\/+/, '/');
+      return url.href;
+    } catch { return base; }
+  };
+  async function cloudPull() {
+    const urls = [...new Set([SYNC_URL, withPath(SYNC_URL, 'pull')])];
+    let lastError = null;
+    for (const url of urls) {
+      const response = await fetch(url, { headers: { Authorization: `Bearer ${SYNC_SCOPE}` }, cache: 'no-store' });
+      if ((response.status === 404 || response.status === 405) && url !== urls[urls.length - 1]) { lastError = new Error(`pull ${response.status}`); continue; }
+      try {
+        const remote = await readSyncJson(response, 'pull');
+        if (remote.version === 3 && !remote.empty) { applyingRemote = true; try { merge(remote); } finally { applyingRemote = false; } return true; }
+        return false;
+      } catch (error) {
+        if (/pull (404|405)/.test(String(error?.message || error)) && url !== urls[urls.length - 1]) { lastError = error; continue; }
+        throw error;
+      }
+    }
+    if (lastError) throw lastError;
+    return false;
+  }
+  async function cloudPush() {
+    const body = JSON.stringify(compactModelForSync());
+    const attempts = [
+      { url: SYNC_URL, method: 'POST' },
+      { url: SYNC_URL, method: 'PUT' },
+      { url: withPath(SYNC_URL, 'push'), method: 'POST' },
+      { url: withPath(SYNC_URL, 'push'), method: 'PUT' }
+    ].filter((item, index, list) => list.findIndex(other => other.url === item.url && other.method === item.method) === index);
+    let lastError = null;
+    for (const attempt of attempts) {
+      const response = await fetch(attempt.url, { method: attempt.method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SYNC_SCOPE}` }, body });
+      if ((response.status === 404 || response.status === 405) && attempt !== attempts[attempts.length - 1]) { lastError = new Error(`push ${response.status}`); continue; }
+      try { await readSyncJson(response, 'push'); localStorage.removeItem(SYNC_DIRTY_KEY); return; }
+      catch (error) {
+        if (/push (404|405)/.test(String(error?.message || error)) && attempt !== attempts[attempts.length - 1]) { lastError = error; continue; }
+        throw error;
+      }
+    }
+    if (lastError) throw lastError;
+  }
   async function autoSync(forcePush = false) {
     if (SYNC_BLOCKED_BY_MIXED_CONTENT) { syncStatus('需要 NAS HTTPS 后才能自动同步', 'error'); return false; }
     if (!CLOUD_SYNC_ENABLED) { syncStatus('本地模式 · 进度仅保存在此浏览器'); return true; }
@@ -272,6 +331,7 @@
   };
   function installChrome() {
     document.body.classList.add('apple-ui');
+    applyRuntimeIcon();
     const page = decodeURIComponent(location.pathname.split('/').pop() || 'index.html');
     const pageClass = page === 'index.html' ? 'page-today' : page === 'ielts-roadmap.html' ? 'page-roadmap' : page === 'ielts-core-vocabulary.html' ? 'page-core' : page === 'ielts-vocabulary-categories.html' ? 'page-class' : page === 'ielts_word_memory_v2_ipa.html' ? 'page-review' : page === '121-letter-combinations.html' ? 'page-phonics' : '';
     if (pageClass) document.body.classList.add(pageClass);
@@ -302,7 +362,7 @@
       const nav = document.createElement('nav'); nav.className = 'apple-tabbar'; nav.setAttribute('aria-label','主要导航'); nav.innerHTML = `<i class="apple-nav-indicator" aria-hidden="true"></i>`+tabs.map(([href,icon,label]) => `<a href="${href}"${current === href ? ' class="active" aria-current="page"' : ''} aria-label="${label}" title="${label}"><span>${icon}</span><em>${label}</em></a>`).join(''); document.body.appendChild(nav);
       const rail = document.createElement('aside'); rail.className = 'apple-desktop-rail'; rail.setAttribute('aria-label', '桌面导航');
       const avatarKey = 'ielti_navigation_avatar_v1';
-      const defaultAvatar = 'icon.png';
+      const defaultAvatar = DEFAULT_ICON;
       const logo = document.createElement('button'); logo.type = 'button'; logo.className = 'apple-rail-logo'; logo.title = '点击更换头像；右键恢复默认头像'; logo.setAttribute('aria-label', '更换或重置头像'); logo.textContent = '';
       avatarControl = logo;
       const avatarInput = document.createElement('input'); avatarInput.type = 'file'; avatarInput.accept = 'image/*'; avatarInput.hidden = true;

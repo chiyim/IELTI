@@ -1,7 +1,7 @@
 window.IELTI_CONFIG = {
-  nasBaseUrl: 'http://100.71.87.40/IELTI/',
-  nasHttpsBaseUrl: 'https://ds418play.tail6d2cd4.ts.net/IELTI/',
-  syncUrl: 'https://ds418play.tail6d2cd4.ts.net/IELTI/ielti-sync.php',
+  nasBaseUrl: 'http://192.168.10.115/IELTI/',
+  nasHttpsBaseUrl: '',
+  syncUrl: 'https://word-sync.chilamc-y.workers.dev',
   syncScope: 'ielti-chilam-personal-site-v1',
-  cloudSyncFallbackUrl: ''
+  cloudSyncFallbackUrl: 'https://word-sync.chilamc-y.workers.dev'
 };
