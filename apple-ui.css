@@ -1804,8 +1804,8 @@ body.page-phonics .learn-toggle.done::after{
 /* Vocabulary card typography: larger words, lighter IPA. */
 body.page-core .vcard .word,
 body.page-class .w .en{
-  font-size:1.6rem!important;
-  font-weight:550!important;
+  font-size:1.8rem!important;
+  font-weight:600!important;
   line-height:1.15!important;
   letter-spacing:-.025em!important;
 }
@@ -1815,6 +1815,38 @@ body.page-class .w .ipa{
   font-weight:400!important;
   line-height:1.25!important;
   letter-spacing:0!important;
+}
+
+/* Keep vocabulary-card metadata before the player, with all controls sharing one baseline. */
+body.page-core .vcard{
+  padding-right:1.1rem!important;
+}
+body.page-core .vcard .top{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:.45rem!important;
+}
+body.page-core .vcard .word-group{
+  flex:1 1 auto!important;
+  min-width:0!important;
+}
+body.page-core .vcard .evp{
+  order:2!important;
+  flex:0 1 auto!important;
+  margin-right:0!important;
+}
+body.page-core .vcard .speak-btn{
+  position:static!important;
+  order:3!important;
+  margin:0!important;
+  transform:none!important;
+}
+
+/* Align the category-card player with the center of the word's first line. */
+body.page-class .w .spk{
+  top:1.85rem!important;
+  transform:translateY(-50%)!important;
 }
 
 /* MOBILE NAV LOCK v4 — iPhone safe-area stable, larger hit targets, no clipped labels. */
