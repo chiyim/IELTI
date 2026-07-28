@@ -7,7 +7,7 @@
     const ua = navigator.userAgent || '';
     return !!global.matchMedia?.('(monochrome)').matches || /(onyx|boox|hisense|moaan|inkpalm|meebook|bigme|reinkstone|dasung|paperwhite|kindle)/i.test(ua);
   };
-  const normalizeDisplayMode = mode => displayModes.includes(mode) ? mode : (global.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const normalizeDisplayMode = mode => displayModes.includes(mode) ? mode : 'light';
   const savedDisplay = localStorage.getItem(DISPLAY_KEY) || (localStorage.getItem(THEME_KEY) === 'eink' ? 'eink' : null) || (probablyEink() ? 'eink' : null) || localStorage.getItem(THEME_KEY);
   function applyDisplayMode(mode, persist = true) {
     const current = normalizeDisplayMode(mode);
