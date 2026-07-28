@@ -1837,7 +1837,9 @@ body.page-core .vcard .evp{
   margin-right:0!important;
 }
 body.page-core .vcard .speak-btn{
-  position:static!important;
+  position:relative!important;
+  top:auto!important;
+  right:auto!important;
   order:3!important;
   margin:0!important;
   transform:none!important;
