@@ -238,7 +238,7 @@
   function speakEnglish(text, options = {}) { if (!text || !('speechSynthesis' in global)) return null; const voice = englishVoice || pickEnglishVoice(); if (!voice && speechSynthesis.getVoices().length === 0) { pendingSpeech = { text, options }; return null; } speechSynthesis.cancel(); const utterance = new SpeechSynthesisUtterance(text); utterance.lang = 'en-US'; utterance.rate = .9; utterance.pitch = 1; if (voice) utterance.voice = voice; if (options.element) { utterance.onstart = () => options.element.classList.add('playing'); utterance.onend = utterance.onerror = () => options.element.classList.remove('playing'); } speechSynthesis.speak(utterance); return utterance; }
   if ('speechSynthesis' in global) { pickEnglishVoice(); if (speechSynthesis.addEventListener) speechSynthesis.addEventListener('voiceschanged', voicesReady); else speechSynthesis.onvoiceschanged = voicesReady; }
 
-  let syncTimer = null, syncing = false, resyncRequested = false, applyingRemote = false;
+  let syncTimer = null, syncing = false, resyncRequested = false, resyncPushRequested = false, applyingRemote = false;
   function syncStatus(text, state = '') { document.querySelectorAll('[data-ielti-sync],#syncState').forEach(el => { el.className = `ielti-sync-state ${state}`; el.textContent = `${CLOUD_SYNC_ENABLED ? '☁︎' : '◉'} ${text}`; }); }
   function syncErrorMessage(error) {
     const msg = String(error?.message || error || '');
@@ -250,7 +250,7 @@
     if (/pull 0|push 0/.test(msg)) return '同步请求被浏览器拦截';
     return `暂时无法同步：${msg || '稍后自动重试'}`;
   }
-  function scheduleCloudPush() { if (!CLOUD_SYNC_ENABLED || applyingRemote) return; localStorage.setItem(SYNC_DIRTY_KEY, '1'); clearTimeout(syncTimer); syncTimer = setTimeout(() => autoSync(true), 1600); }
+  function scheduleCloudPush() { if (!CLOUD_SYNC_ENABLED || applyingRemote) return; localStorage.setItem(SYNC_DIRTY_KEY, '1'); clearTimeout(syncTimer); syncTimer = setTimeout(() => autoSync(true), 3000); }
   async function readSyncJson(response, stage) {
     const text = await response.text();
     if (!response.ok) throw new Error(`${stage} ${response.status}`);
@@ -305,15 +305,28 @@
     }
     if (lastError) throw lastError;
   }
-  async function autoSync(forcePush = false) {
+  async function autoSync(shouldPush = false) {
     if (SYNC_BLOCKED_BY_MIXED_CONTENT) { syncStatus('需要 NAS HTTPS 后才能自动同步', 'error'); return false; }
     if (!CLOUD_SYNC_ENABLED) { syncStatus('本地模式 · 进度仅保存在此浏览器'); return true; }
     if (!navigator.onLine) { syncStatus('离线，联网后自动同步'); return false; }
-    if (syncing) { resyncRequested = true; return false; }
+    if (syncing) { resyncRequested = true; resyncPushRequested ||= shouldPush; return false; }
     syncing = true; syncStatus('正在自动同步…');
-    try { await cloudPull(); await cloudPush(); syncStatus('已自动同步', 'ok'); return true; }
+    try {
+      await cloudPull();
+      if (shouldPush || localStorage.getItem(SYNC_DIRTY_KEY) === '1') await cloudPush();
+      syncStatus('已自动同步', 'ok');
+      return true;
+    }
     catch (error) { console.warn('IELTI sync:', error, SYNC_URL); syncStatus(syncErrorMessage(error), 'error'); return false; }
-    finally { syncing = false; if (resyncRequested) { resyncRequested = false; scheduleCloudPush(); } }
+    finally {
+      syncing = false;
+      if (resyncRequested) {
+        const retryPush = resyncPushRequested;
+        resyncRequested = false;
+        resyncPushRequested = false;
+        if (retryPush) scheduleCloudPush(); else autoSync(false);
+      }
+    }
   }
   const reducedMotion = () => global.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const motion = {
@@ -419,7 +432,11 @@
   global.IELTI = { KEY, get: () => model, save, merge, summary, wordId, migrateClassWords, getDeck, reviewCard, setRoadmap, setMastered, setFamiliar, setFamiliarList, replaceDeck, getPhonics, setPhonics, media: { resolve: resolveMediaUrl, nasBaseUrl: NAS_BASE_URL, nasHttpsBaseUrl: NAS_HTTPS_BASE_URL }, backup: { keys: [...BACKUP_KEYS], export: exportBackup, import: importBackup }, motion, speech: { speak: speakEnglish, pickVoice: pickEnglishVoice }, sync: { enabled: CLOUD_SYNC_ENABLED, url: SYNC_URL, run: autoSync, schedulePush: scheduleCloudPush } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', installChrome); else installChrome();
   global.addEventListener('ielti-progress', scheduleCloudPush);
-  if (CLOUD_SYNC_ENABLED) { global.addEventListener('online', () => autoSync(localStorage.getItem(SYNC_DIRTY_KEY) === '1')); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') autoSync(localStorage.getItem(SYNC_DIRTY_KEY) === '1'); }); setInterval(() => { if (document.visibilityState === 'visible') autoSync(false); }, 60000); }
-  queueMicrotask(() => autoSync(CLOUD_SYNC_ENABLED && localStorage.getItem(SYNC_DIRTY_KEY) === '1'));
+  if (CLOUD_SYNC_ENABLED) {
+    global.addEventListener('online', () => autoSync(localStorage.getItem(SYNC_DIRTY_KEY) === '1'));
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') autoSync(false); });
+    setInterval(() => { if (document.visibilityState === 'visible') autoSync(false); }, 600000);
+  }
+  queueMicrotask(() => autoSync(localStorage.getItem(SYNC_DIRTY_KEY) === '1'));
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
 })(window);
