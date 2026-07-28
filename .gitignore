@@ -1,0 +1,8 @@
+.DS_Store
+*.log
+*.tmp
+*.bak
+*.backup
+*.json.backup
+node_modules/
+deploy/

@@ -4,10 +4,12 @@
 
 ## 修改与发布
 
+- 当前主开发目录是 `/Users/chilam/Desktop/iLam_Codex/IELTI/GitHub`。不要再把外层 `/Users/chilam/Desktop/iLam_Codex/IELTI` 当作主要源码来改，避免两套文件互相覆盖。
 - 默认只在本地修改。除非用户明确说“上传到 GitHub / 发布 / 推送”，不要上传、推送或发布。
+- 用户倾向自己用 GitHub Desktop 上传。一般情况下，Codex 只负责在本目录修改和验证，不主动执行 `git push`。
 - 用户要求上传时，只上传网页运行需要的静态文件，例如 HTML、CSS、JS、manifest、service worker、icon。
 - 不上传视频、PDF、课程资料、临时截图、备份进度文件、`node_modules` 或其他大文件。
-- 发布到 GitHub 时，优先使用从 `https://github.com/chiyim/IELTI.git` 克隆出来的干净临时副本，再覆盖当前根目录源码文件并提交推送，避免 `deploy/` 旧历史污染。
+- 如果用户明确要求 Codex 代为上传，当前目录本身已经是 GitHub Desktop 管理的干净仓库；优先在本目录检查差异、显式暂存静态文件、提交并推送。
 - `deploy/` 目录不是主要维护位置；不要把它当作唯一源码来改。根目录页面和共享样式才是主要源码。
 - 如果网络连接 GitHub 失败，不要强行改远程或做破坏性操作；说明网络失败并等待用户重试。
 - 本机终端访问 GitHub 可能不会自动走浏览器代理。执行 GitHub 相关 `git` 命令时，临时加：
@@ -30,11 +32,20 @@
 
 ## 进度与同步
 
-- 进度同步由 `ielti-config.js` 配置；当前目标是本地页面、NAS 页面、GitHub 页面共用同一个 NAS 同步接口。
-- 如果 GitHub Pages 访问 NAS 同步接口，NAS 必须提供可信 HTTPS，否则浏览器会因为混合内容限制拦截同步。
+- 进度同步由 `ielti-config.js` 配置；当前同步服务器使用 Worker：`https://word-sync.chilamc-y.workers.dev`。
+- 本地 `file://` 页面和 GitHub Pages 页面都要使用同一套 Worker 自动同步。
+- `localhost`、`127.0.0.1`、`::1` 视为开发调试环境，可以不自动同步。
+- NAS 只保留视频和 PDF；当前家里 Wi-Fi 媒体地址是 `http://192.168.10.115/IELTI/`。
+- GitHub Pages 是 HTTPS 页面，加载家里 NAS 的 HTTP 视频/PDF 可能受浏览器策略影响；如果浏览器拦截，需要在家里局域网环境单独处理媒体访问方式。
 - 用户的学习进度很重要，不要随意清空、重置或覆盖。
 - 分类记忆法和词汇记忆中心共享词汇学习状态，但“已熟悉”不等于“长期掌握”；长期掌握由词汇记忆中心的间隔重复复习结果决定。
 - 记忆中心的分类词汇和核心词表应分别保存本轮队列和当前进度，切换页面或切换词库后应能继续。
+
+## 本地与线上区分
+
+- 本地 `file://` 打开时，默认网页 icon 和默认头像使用根目录 `icon_local.png`。
+- GitHub Pages / NAS 页面打开时，默认网页 icon 和默认头像使用根目录 `icon.png`。
+- 如果用户上传了自定义头像，自定义头像优先；右键头像重置后才回到对应环境的默认图标。
 
 ## 设计约定
 
