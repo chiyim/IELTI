@@ -1804,7 +1804,7 @@ body.page-phonics .learn-toggle.done::after{
 /* Vocabulary card typography: larger words, lighter IPA. */
 body.page-core .vcard .word,
 body.page-class .w .en{
-  font-size:1.42rem!important;
+  font-size:1.6rem!important;
   font-weight:760!important;
   line-height:1.15!important;
   letter-spacing:-.025em!important;
