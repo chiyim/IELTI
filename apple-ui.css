@@ -1805,7 +1805,7 @@ body.page-phonics .learn-toggle.done::after{
 body.page-core .vcard .word,
 body.page-class .w .en{
   font-size:1.6rem!important;
-  font-weight:760!important;
+  font-weight:550!important;
   line-height:1.15!important;
   letter-spacing:-.025em!important;
 }
