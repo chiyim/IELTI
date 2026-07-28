@@ -357,7 +357,7 @@ document.getElementById('autoSpkBtn').onclick=function(){autoSpeak=!autoSpeak;th
 // display mode
 const DISPLAY_KEY='ielti_display_mode_v1';
 const DISPLAY_MODES=['light','dark','eink'];
-function normalizeDisplayMode(t){return DISPLAY_MODES.includes(t)?t:'dark';}
+function normalizeDisplayMode(t){return DISPLAY_MODES.includes(t)?t:'light';}
 function applyTheme(t){
   theme=normalizeDisplayMode(t);
   document.documentElement.dataset.display=theme;
@@ -369,7 +369,7 @@ function applyTheme(t){
   button.setAttribute('aria-label',`当前：${theme==='eink'?'墨水屏':theme==='light'?'浅色':'深色'} · 点击切换显示模式`);
   button.title=button.getAttribute('aria-label');
 }
-let theme=localStorage.getItem(DISPLAY_KEY)||localStorage.getItem('ielti_theme_v1')||localStorage.getItem(LS_THEME)||'dark';applyTheme(theme);
+let theme=localStorage.getItem(DISPLAY_KEY)||localStorage.getItem('ielti_theme_v1')||localStorage.getItem(LS_THEME)||'light';applyTheme(theme);
 // 顶部菜单收起/展开
 const LS_COLLAPSE='wclass_collapse_v1';
 const headerEl=document.querySelector('header');
