@@ -12,6 +12,23 @@
 <style>
 body.page-review .hint.is-correct{color:#259b62;font-weight:700}
 body.page-review .hint.is-incorrect{color:#d9831f;font-weight:700}
+/* 词性／难度标签：无论是“n. 名词”还是“B1,B2”，都使用同一个紧凑尺寸。 */
+body.page-review .wordarea .pos{
+  display:inline-flex!important;
+  justify-self:center;
+  align-items:center;
+  justify-content:center;
+  width:7rem;
+  min-width:7rem;
+  height:1.8rem;
+  margin:.45rem 0 0!important;
+  padding:0 .55rem!important;
+  border-radius:.5rem;
+  font-size:.82rem!important;
+  font-weight:500;
+  line-height:1!important;
+  white-space:nowrap;
+}
 @media(max-width:760px){
   body.page-review.apple-ui .apple-tabbar{right:auto!important;bottom:max(.5rem,calc(env(safe-area-inset-bottom,0px) - 12px))!important;width:calc(100% - 1.5rem)!important}
   body.page-review.apple-ui.apple-nav-compact .apple-tabbar{width:3.55rem!important;height:3.55rem!important;min-height:3.55rem!important;max-height:3.55rem!important;padding:.27rem!important;grid-template-columns:1fr!important;border-radius:50%!important;place-items:center!important}
@@ -26,7 +43,7 @@ body.page-review .hint.is-incorrect{color:#d9831f;font-weight:700}
   body.page-review .study:before,body.page-review .study:after{content:none!important;display:none!important;pointer-events:none!important}
   body.page-review #studyContent{pointer-events:auto!important}
   body.page-review .wordarea .ipa{display:inline!important;min-height:0!important}
-  body.page-review .wordarea .pos{display:inline-block!important;vertical-align:middle;margin:.05rem 0 0 .45rem!important;padding:.15rem .48rem!important;font-size:.72rem!important;line-height:1.2!important}
+  body.page-review .wordarea .pos{display:inline-flex!important;vertical-align:middle;margin:.05rem 0 0 .45rem!important;padding:0 .48rem!important;font-size:.72rem!important;line-height:1!important}
   body.page-review .wordarea .meaning{font-size:1.25rem!important;line-height:1.35!important}
 }
 body.page-review.small-square-device .app{padding:.5rem .65rem calc(4.7rem + var(--apple-safe-bottom))!important}
@@ -48,7 +65,7 @@ body.page-review.small-square-device .wordarea{flex:1;min-height:0;padding:.35re
 body.page-review.small-square-device .group{font-size:.66rem!important}
 body.page-review.small-square-device .word{font-size:clamp(2.5rem,9vw,3.65rem)!important;margin:.35rem 0 .1rem!important}
 body.page-review.small-square-device .ipa{display:inline!important;min-height:0!important;font-size:1rem!important}
-body.page-review.small-square-device .pos{display:inline-block!important;vertical-align:middle;margin:.05rem 0 0 .45rem!important;padding:.15rem .48rem!important;font-size:.72rem!important;line-height:1.2!important}
+body.page-review.small-square-device .pos{display:inline-flex!important;vertical-align:middle;margin:.05rem 0 0 .45rem!important;padding:0 .48rem!important;font-size:.72rem!important;line-height:1!important}
 body.page-review.small-square-device .meaning{margin:.45rem auto .1rem!important;font-size:1.25rem!important;line-height:1.35!important}
 body.page-review.small-square-device .hint{font-size:.7rem!important}
 body.page-review.small-square-device .controls{margin-top:auto!important}
