@@ -460,7 +460,7 @@
           }
           if (!ready || expandedByTap || delta === 0) return;
           travel += Math.abs(delta);
-          if (travel >= 48) { travel = 0; revealStudyNav(); }
+          if (travel >= 88) { travel = 0; revealStudyNav(); }
           else if (document.body.classList.contains('apple-nav-compact')) armStudyIdleTimer();
           return;
         }
