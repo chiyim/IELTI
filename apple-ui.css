@@ -673,7 +673,7 @@ body.page-today .ring b{
 body.page-class .w.long-mastered{box-shadow:0 4px 16px rgba(0,0,0,.05)!important}
 
 /* Short landscape phones: keep the study card and all four ratings in one viewport. */
-@media(max-width:820px) and (max-height:540px) and (orientation:landscape){
+@media(hover:none) and (pointer:coarse) and (max-height:700px) and (orientation:landscape){
   body.page-review .app{padding:.35rem .65rem calc(4.8rem + var(--apple-safe-bottom))!important}
   body.page-review .top,body.page-review .stats{display:none!important}
   body.page-review .review-deck-tabs{margin:.05rem 0 .35rem!important;min-height:2.2rem}
