@@ -103,6 +103,7 @@
   model.phonics.reviews ||= [];
   model.phonics.quiz ||= { right: 0, total: 0 };
   model.activity ||= {};
+  model.meta ||= {};
 
   function normalizeCard(card = {}) {
     return { reps: card.reps || card.level || 0, lapses: card.lapses || 0, interval: card.interval || 0, ease: card.ease || 2.5, due: card.due || null, lastReviewed: card.lastReviewed || card.last || null, familiar: !!card.familiar, mastered: !!card.mastered, familiarUpdatedAt: card.familiarUpdatedAt || null, masteredUpdatedAt: card.masteredUpdatedAt || null };
@@ -160,10 +161,62 @@
     localStorage.setItem('ielti_phonics_121_v1', JSON.stringify(normalizePhonics(model.phonics)));
   }
   function save(emit = true) { model.updatedAt = nowIso(); mirrorLegacyProgress(); localStorage.setItem(KEY, JSON.stringify(model)); if (emit) global.dispatchEvent(new CustomEvent('ielti-progress', { detail: model })); }
-  function markActivity(kind) { const day = new Date().toISOString().slice(0, 10); model.activity[day] ||= { reviews: 0, courses: 0 }; model.activity[day][kind] = (model.activity[day][kind] || 0) + 1; }
+  const localDay = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
+  function activityFor(day = localDay()) { return model.activity[day] ||= { reviews: 0, courses: 0, studySeconds: 0, videoSeconds: 0, newWords: 0, reviewWords: 0, forgotten: 0, dictCorrect: 0, dictWrong: 0, newMastered: 0, timeByPeriod: {} }; }
+  function markActivity(kind) { const activity = activityFor(); activity[kind] = (activity[kind] || 0) + 1; }
+  function recordActivity(kind, amount = 1) { const activity = activityFor(); activity[kind] = (activity[kind] || 0) + Math.max(0, Number(amount) || 0); save(false); }
+  let lastTimeSyncAt = 0;
+  function recordStudySeconds(seconds, source = 'page') {
+    const amount = Math.max(0, Math.round(Number(seconds) || 0));
+    if (!amount) return;
+    const activity = activityFor();
+    activity.studySeconds = (activity.studySeconds || 0) + amount;
+    if (source === 'video') activity.videoSeconds = (activity.videoSeconds || 0) + amount;
+    const hour = new Date().getHours(), period = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
+    activity.timeByPeriod ||= {}; activity.timeByPeriod[period] = (activity.timeByPeriod[period] || 0) + amount;
+    const shouldSync = Date.now() - lastTimeSyncAt >= 300000;
+    if (shouldSync) lastTimeSyncAt = Date.now();
+    save(shouldSync);
+  }
+  function recordCourseVideo(seconds, courseId) {
+    const amount = Math.max(0, Math.round(Number(seconds) || 0));
+    if (!amount) return;
+    const activity = activityFor();
+    activity.courseSeconds = (activity.courseSeconds || 0) + amount;
+    activity.courses = (activity.courses || 0) + 1;
+    const hour = new Date().getHours(), period = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
+    activity.timeByPeriod ||= {}; activity.timeByPeriod[period] = (activity.timeByPeriod[period] || 0) + amount;
+    if (courseId) {
+      const baseline = new Set(model.meta.courseDurationBaselineIds || []);
+      baseline.add(String(courseId));
+      model.meta.courseDurationBaselineIds = [...baseline];
+    }
+    save();
+  }
+  function backfillCourseDurations(weeks, completed = model.roadmap.completed, startDate = model.roadmap.startDate) {
+    if (!Array.isArray(weeks) || !startDate || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return false;
+    const baseline = new Set(model.meta.courseDurationBaselineIds || []);
+    let changed = false;
+    weeks.forEach((week, weekIndex) => (week.days || []).forEach((videos, dayIndex) => (videos || []).forEach(video => {
+      const id = String(video.id || '');
+      if (!id || !completed?.['vid_' + id] || baseline.has(id)) return;
+      const seconds = Math.max(0, Math.round(Number(video.dur) || 0));
+      if (!seconds) return;
+      const date = new Date(startDate + 'T00:00:00');
+      date.setDate(date.getDate() + weekIndex * 7 + dayIndex);
+      const day = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+      const activity = activityFor(day);
+      activity.courseSeconds = (activity.courseSeconds || 0) + seconds;
+      activity.courses = (activity.courses || 0) + 1;
+      baseline.add(id); changed = true;
+    })));
+    if (changed) { model.meta.courseDurationBaselineIds = [...baseline]; save(); }
+    return changed;
+  }
   function reviewCard(deck, id, rating) {
     const cards = model.vocab[deck] ||= {};
     const card = normalizeCard(cards[id]);
+    const wasNew = !(card.reps || card.lastReviewed || card.due), wasMastered = card.mastered;
     const now = Date.now();
     if (rating === 0) { card.reps = 0; card.lapses += 1; card.interval = 0; card.ease = Math.max(1.3, card.ease - 0.2); card.due = new Date(now + 10 * 60000).toISOString(); card.mastered = false; }
     else {
@@ -173,7 +226,7 @@
       if (rating === 3) { card.ease += 0.15; card.interval = card.reps === 1 ? 4 : Math.max(7, Math.round((card.interval || 3) * card.ease * 1.3)); }
       card.due = new Date(now + card.interval * DAY).toISOString();
     }
-    card.lastReviewed = nowIso(); card.mastered = card.reps >= 3 && card.interval >= 21; cards[id] = card; markActivity('reviews'); save(); return card;
+    card.lastReviewed = nowIso(); card.mastered = card.reps >= 3 && card.interval >= 21; cards[id] = card; markActivity('reviews'); markActivity(wasNew ? 'newWords' : 'reviewWords'); if (rating === 0) markActivity('forgotten'); if (!wasMastered && card.mastered) markActivity('newMastered'); save(); return card;
   }
   function setRoadmap(completed, startDate) { model.roadmap.completed = completed || {}; if (typeof startDate === 'string') model.roadmap.startDate = startDate; save(); }
   function setMastered(deck, ids) { const cards = model.vocab[deck] ||= {}, stamp = nowIso(); const wanted = new Set(ids); Object.keys(cards).forEach(id => { if (cards[id].mastered && !wanted.has(id)) cards[id] = normalizeCard({ ...cards[id], mastered: false, masteredUpdatedAt: stamp }); }); wanted.forEach(id => { cards[id] = normalizeCard({ ...cards[id], reps: Math.max(3, cards[id]?.reps || 0), interval: Math.max(30, cards[id]?.interval || 0), mastered: true, masteredUpdatedAt: cards[id]?.mastered ? cards[id]?.masteredUpdatedAt : stamp }); }); save(); }
@@ -190,7 +243,7 @@
   function setPhonics(value) { model.phonics = normalizePhonics(value); save(); return model.phonics; }
   function getDeck(deck) { return model.vocab[deck] || {}; }
   function dueCount(deck) { const now = Date.now(); return Object.values(getDeck(deck)).filter(c => c.due && new Date(c.due).getTime() <= now).length; }
-  function summary() { const completed = Object.values(model.roadmap.completed).filter(Boolean).length; const core = Object.values(model.vocab.core); const cls = Object.values(model.vocab.class); const start = model.roadmap.startDate ? new Date(model.roadmap.startDate + 'T00:00:00') : null; const day = start ? Math.max(1, Math.floor((Date.now() - start.getTime()) / DAY) + 1) : 1; return { day, week: Math.min(26, Math.ceil(day / 7)), completed, coreMastered: core.filter(c => c.mastered).length, classMastered: cls.filter(c => c.mastered).length, due: dueCount('core') + dueCount('class'), today: model.activity[new Date().toISOString().slice(0, 10)] || { reviews: 0, courses: 0 } }; }
+  function summary() { const completed = Object.values(model.roadmap.completed).filter(Boolean).length; const core = Object.values(model.vocab.core); const cls = Object.values(model.vocab.class); const start = model.roadmap.startDate ? new Date(model.roadmap.startDate + 'T00:00:00') : null; const day = start ? Math.max(1, Math.floor((Date.now() - start.getTime()) / DAY) + 1) : 1; return { day, week: Math.min(26, Math.ceil(day / 7)), completed, coreMastered: core.filter(c => c.mastered).length, classMastered: cls.filter(c => c.mastered).length, due: dueCount('core') + dueCount('class'), today: model.activity[localDay()] || { reviews: 0, courses: 0, studySeconds: 0, videoSeconds: 0 } }; }
   function exportBackup() {
     const data = {};
     BACKUP_KEYS.forEach(key => { const value = localStorage.getItem(key); if (value !== null) data[key] = value; });
@@ -221,7 +274,7 @@
     const familiar = chooseFlag('familiar', 'familiarUpdatedAt'), mastered = chooseFlag('mastered', 'masteredUpdatedAt');
     return normalizeCard({ ...base, familiar: familiar.value, familiarUpdatedAt: familiar.updatedAt, mastered: mastered.value, masteredUpdatedAt: mastered.updatedAt });
   }
-  function merge(remote) { if (!remote || remote.version !== 3) return false; Object.entries(remote.roadmap?.completed || {}).forEach(([k, v]) => { if (v) model.roadmap.completed[k] = true; }); ['core', 'class'].forEach(deck => Object.entries(remote.vocab?.[deck] || {}).forEach(([id, card]) => { model.vocab[deck][id] = mergeCard(model.vocab[deck][id], card); })); if (remote.phonics) { const localPhonics = normalizePhonics(model.phonics), remotePhonics = normalizePhonics(remote.phonics); model.phonics = { learned: [...new Set([...localPhonics.learned, ...remotePhonics.learned])], reviews: [...new Set([...localPhonics.reviews, ...remotePhonics.reviews])], quiz: { right: Math.max(localPhonics.quiz.right, remotePhonics.quiz.right), total: Math.max(localPhonics.quiz.total, remotePhonics.quiz.total) } }; } Object.entries(remote.activity || {}).forEach(([day, activity]) => { const local = model.activity[day] ||= { reviews: 0, courses: 0 }; local.reviews = Math.max(local.reviews || 0, activity.reviews || 0); local.courses = Math.max(local.courses || 0, activity.courses || 0); }); if (!model.roadmap.startDate && remote.roadmap?.startDate) model.roadmap.startDate = remote.roadmap.startDate; save(); return true; }
+  function merge(remote) { if (!remote || remote.version !== 3) return false; Object.entries(remote.roadmap?.completed || {}).forEach(([k, v]) => { if (v) model.roadmap.completed[k] = true; }); ['core', 'class'].forEach(deck => Object.entries(remote.vocab?.[deck] || {}).forEach(([id, card]) => { model.vocab[deck][id] = mergeCard(model.vocab[deck][id], card); })); if (remote.phonics) { const localPhonics = normalizePhonics(model.phonics), remotePhonics = normalizePhonics(remote.phonics); model.phonics = { learned: [...new Set([...localPhonics.learned, ...remotePhonics.learned])], reviews: [...new Set([...localPhonics.reviews, ...remotePhonics.reviews])], quiz: { right: Math.max(localPhonics.quiz.right, remotePhonics.quiz.right), total: Math.max(localPhonics.quiz.total, remotePhonics.quiz.total) } }; } Object.entries(remote.activity || {}).forEach(([day, activity]) => { const local = activityFor(day); ['reviews', 'courses', 'studySeconds', 'videoSeconds', 'courseSeconds', 'newWords', 'reviewWords', 'forgotten', 'dictCorrect', 'dictWrong', 'newMastered'].forEach(key => local[key] = Math.max(local[key] || 0, activity[key] || 0)); Object.entries(activity.timeByPeriod || {}).forEach(([key, value]) => { local.timeByPeriod ||= {}; local.timeByPeriod[key] = Math.max(local.timeByPeriod[key] || 0, value || 0); }); }); if (!model.roadmap.startDate && remote.roadmap?.startDate) model.roadmap.startDate = remote.roadmap.startDate; save(); return true; }
   function hasCardProgress(card) {
     const c = normalizeCard(card);
     return !!(c.reps || c.lapses || c.interval || c.due || c.lastReviewed || c.familiar || c.mastered || c.familiarUpdatedAt || c.masteredUpdatedAt);
@@ -351,6 +404,7 @@
     const page = decodeURIComponent(location.pathname.split('/').pop() || 'index.html');
     const pageClass = page === 'index.html' ? 'page-today' : page === 'ielts-roadmap.html' ? 'page-roadmap' : page === 'ielts-core-vocabulary.html' ? 'page-core' : page === 'ielts-vocabulary-categories.html' ? 'page-class' : page === 'ielts_word_memory_v2_ipa.html' ? 'page-review' : page === '121-letter-combinations.html' ? 'page-phonics' : '';
     if (pageClass) document.body.classList.add(pageClass);
+    if (page === 'ielts-video-player.html') return;
     const syncPageTheme = () => document.body.classList.toggle('light', document.documentElement.dataset.theme === 'light');
     syncPageTheme();
     if (!document.querySelector('.apple-theme-toggle') && !document.getElementById('themeBtn')) {
@@ -501,7 +555,7 @@
   }
   migrate();
   mirrorLegacyProgress();
-  global.IELTI = { KEY, get: () => model, save, merge, summary, wordId, migrateClassWords, getDeck, reviewCard, setRoadmap, setMastered, setFamiliar, setFamiliarList, replaceDeck, getPhonics, setPhonics, media: { resolve: resolveMediaUrl, nasBaseUrl: NAS_BASE_URL, nasHttpsBaseUrl: NAS_HTTPS_BASE_URL }, backup: { keys: [...BACKUP_KEYS], export: exportBackup, import: importBackup }, motion, speech: { speak: speakEnglish, pickVoice: pickEnglishVoice }, sync: { enabled: CLOUD_SYNC_ENABLED, url: SYNC_URL, run: autoSync, schedulePush: scheduleCloudPush } };
+  global.IELTI = { KEY, get: () => model, save, merge, summary, wordId, migrateClassWords, getDeck, reviewCard, setRoadmap, setMastered, setFamiliar, setFamiliarList, replaceDeck, getPhonics, setPhonics, recordStudySeconds, recordCourseVideo, backfillCourseDurations, recordActivity, media: { resolve: resolveMediaUrl, nasBaseUrl: NAS_BASE_URL, nasHttpsBaseUrl: NAS_HTTPS_BASE_URL }, backup: { keys: [...BACKUP_KEYS], export: exportBackup, import: importBackup }, motion, speech: { speak: speakEnglish, pickVoice: pickEnglishVoice }, sync: { enabled: CLOUD_SYNC_ENABLED, url: SYNC_URL, run: autoSync, schedulePush: scheduleCloudPush } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', installChrome); else installChrome();
   global.addEventListener('ielti-progress', scheduleCloudPush);
   if (CLOUD_SYNC_ENABLED) {
