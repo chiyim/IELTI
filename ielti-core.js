@@ -475,7 +475,8 @@
       if (!nav || nav.dataset.autoHideInstalled) return;
       nav.dataset.autoHideInstalled = 'true';
       const mobile = matchMedia('(max-width:760px)');
-      const studyPage = pageClass === 'page-review' && document.body.classList.contains('small-square-device');
+      const reviewPage = pageClass === 'page-review';
+      const studyPage = reviewPage && document.body.classList.contains('small-square-device');
       let expandedByTap = false;
       let idleTimer = 0;
       let travel = 0;
@@ -505,6 +506,7 @@
         if (!mobile.matches) { stopIdleTimer(); setState('full'); lastY = window.scrollY; return; }
         const y = Math.max(0, window.scrollY), delta = y - lastY;
         lastY = y;
+        if (reviewPage && !studyPage) { setState('full'); return; }
         if (studyPage) {
           if (y <= 4 && delta < 0) {
             stopIdleTimer();

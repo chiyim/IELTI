@@ -11,7 +11,7 @@
   </style>
 </head>
 <body class="apple-ui"><main class="player-wrap"><a class="back" href="ielts-roadmap.html">← 返回课程路线</a><p class="kicker">IELTI COURSE PLAYER</p><h1 class="title" id="title">课程视频</h1><div class="video-shell" id="shell"><video id="video" controls playsinline preload="metadata"></video></div><p class="status" id="status">学习时长会在课程勾选完成时，按视频时长计入。</p></main>
-<script src="ielti-config.js?v=20260728-5"></script><script src="ielti-core.js?v=20260729-22"></script><script>
+<script src="ielti-config.js?v=20260728-5"></script><script src="ielti-core.js?v=20260730-23"></script><script>
 const params=new URLSearchParams(location.search),src=params.get('src'),title=params.get('title')||'课程视频',video=document.getElementById('video'),status=document.getElementById('status');document.getElementById('title').textContent=title;
 if(src&&((location.protocol==='https:'&&src.startsWith('http:'))||(location.protocol==='file:'&&src.startsWith('file:')))){location.replace(src)}else if(!src){document.getElementById('shell').innerHTML='<div class="error">没有找到视频地址。<br><a href="ielts-roadmap.html">返回课程路线</a></div>';status.hidden=true}else{video.src=src}
 </script></body></html>
