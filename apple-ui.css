@@ -669,6 +669,28 @@ body.page-today .ring b{
 }
 @media(max-width:760px) and (prefers-reduced-motion:reduce){body.apple-ui.apple-nav-hidden .apple-tabbar{transform:none!important;opacity:0!important}}
 
+/* Review study surface: no decorative overlay may sit above the card controls. */
+body.page-review .study::before{
+  content:none!important;
+  display:none!important;
+}
+body.page-review .study>#studyContent,
+body.page-review .study>#empty{
+  position:relative;
+  z-index:auto!important;
+  pointer-events:auto!important;
+}
+@media(max-width:760px) and (hover:none) and (pointer:coarse){
+  body.page-review .study,
+  body.page-review .study *{
+    transition:none!important;
+  }
+  body.page-review .study:active,
+  body.page-review .study button:active{
+    transform:none!important;
+  }
+}
+
 /* Keep every edge of a long-mastered category card equally weighted. */
 body.page-class .w.long-mastered{box-shadow:0 4px 16px rgba(0,0,0,.05)!important}
 

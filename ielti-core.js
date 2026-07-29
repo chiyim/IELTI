@@ -421,18 +421,43 @@
       if (!nav || nav.dataset.autoHideInstalled) return;
       nav.dataset.autoHideInstalled = 'true';
       const mobile = matchMedia('(max-width:760px)');
+      const studyPage = pageClass === 'page-review';
       let expandedByTap = false;
+      let idleTimer = 0;
+      let travel = 0;
+      let ready = !studyPage;
       const setState = state => {
         const enabled = mobile.matches;
         document.body.classList.toggle('apple-nav-hidden', enabled && state === 'hidden');
         document.body.classList.toggle('apple-nav-compact', enabled && state === 'compact');
       };
+      const stopIdleTimer = () => { if (idleTimer) clearTimeout(idleTimer); idleTimer = 0; };
+      const hideStudyNav = () => {
+        stopIdleTimer();
+        if (!expandedByTap) setState('hidden');
+      };
+      const armStudyIdleTimer = () => {
+        stopIdleTimer();
+        if (!expandedByTap) idleTimer = setTimeout(hideStudyNav, 2200);
+      };
+      const revealStudyNav = () => {
+        if (expandedByTap) return;
+        setState('compact');
+        armStudyIdleTimer();
+      };
       let lastY = window.scrollY, down = 0, up = 0, ticking = false;
       const update = () => {
         ticking = false;
-        if (!mobile.matches) { setState('full'); lastY = window.scrollY; return; }
+        if (!mobile.matches) { stopIdleTimer(); setState('full'); lastY = window.scrollY; return; }
         const y = Math.max(0, window.scrollY), delta = y - lastY;
         lastY = y;
+        if (studyPage) {
+          if (!ready || expandedByTap || delta === 0) return;
+          travel += Math.abs(delta);
+          if (travel >= 48) { travel = 0; revealStudyNav(); }
+          else if (document.body.classList.contains('apple-nav-compact')) armStudyIdleTimer();
+          return;
+        }
         if (y < 48) { down = 0; up = 0; expandedByTap = false; setState('full'); return; }
         if (delta > 0) { down += delta; up = 0; if (down > 28) { expandedByTap = false; setState('compact'); } }
         else if (delta < 0) { up -= delta; down = 0; if (up > 10 && !expandedByTap) setState('compact'); }
@@ -443,9 +468,18 @@
         if (!mobile.matches || !document.body.classList.contains('apple-nav-compact') || !link || !nav.contains(link)) return;
         event.preventDefault();
         expandedByTap = true;
+        stopIdleTimer();
         setState('full');
       });
-      mobile.addEventListener('change', () => { down = 0; up = 0; expandedByTap = false; setState('full'); });
+      if (studyPage && mobile.matches) {
+        setState('hidden');
+        setTimeout(() => { ready = true; lastY = window.scrollY; travel = 0; setState('hidden'); }, 180);
+      }
+      mobile.addEventListener('change', () => {
+        stopIdleTimer(); down = 0; up = 0; travel = 0; expandedByTap = false; ready = !studyPage || !mobile.matches;
+        setState(studyPage && mobile.matches ? 'hidden' : 'full');
+        if (studyPage && mobile.matches) setTimeout(() => { ready = true; lastY = window.scrollY; }, 180);
+      });
     };
     installMobileNavAutoHide();
     const themeControl = document.querySelector('.apple-theme-toggle') || document.getElementById('themeBtn');
