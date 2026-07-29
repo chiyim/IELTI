@@ -669,6 +669,35 @@ body.page-today .ring b{
 }
 @media(max-width:760px) and (prefers-reduced-motion:reduce){body.apple-ui.apple-nav-hidden .apple-tabbar{transform:none!important;opacity:0!important}}
 
+/* Keep every edge of a long-mastered category card equally weighted. */
+body.page-class .w.long-mastered{box-shadow:0 4px 16px rgba(0,0,0,.05)!important}
+
+/* Short landscape phones: keep the study card and all four ratings in one viewport. */
+@media(max-width:820px) and (max-height:540px) and (orientation:landscape){
+  body.page-review .app{padding:.35rem .65rem calc(4.8rem + var(--apple-safe-bottom))!important}
+  body.page-review .top,body.page-review .stats{display:none!important}
+  body.page-review .review-deck-tabs{margin:.05rem 0 .35rem!important;min-height:2.2rem}
+  body.page-review .review-deck-tabs button{padding:.42rem .8rem!important;font-size:.78rem!important}
+  body.page-review .layout{gap:0!important}
+  body.page-review .study{height:calc(100dvh - 7.7rem - var(--apple-safe-bottom))!important;min-height:0!important;padding:.7rem .85rem!important}
+  body.page-review #studyContent{height:100%;display:flex;flex-direction:column}
+  body.page-review .study-head{font-size:.72rem!important}
+  body.page-review .progress{height:.32rem;margin:.4rem 0!important}
+  body.page-review .wordarea{flex:1;min-height:0;padding:.35rem .2rem!important}
+  body.page-review .group{font-size:.66rem!important}
+  body.page-review .word{font-size:clamp(2.15rem,7.6vw,3.15rem)!important;margin:.35rem 0 .1rem!important}
+  body.page-review .ipa{min-height:1.3rem!important;font-size:1rem!important}
+  body.page-review .pos{margin-top:.2rem!important;padding:.18rem .55rem!important}
+  body.page-review .meaning{margin:.45rem auto .1rem!important;font-size:1.25rem!important}
+  body.page-review .hint{font-size:.7rem!important}
+  body.page-review .dictate{min-height:2.15rem!important;margin-top:.35rem!important;padding:.35rem!important;font-size:1rem!important}
+  body.page-review .controls{gap:.45rem!important}
+  body.page-review .controls .btn{padding:.48rem .85rem!important;font-size:.8rem!important}
+  body.page-review .ratings{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:.42rem!important;margin-top:.55rem!important}
+  body.page-review .rate{padding:.5rem .15rem!important;font-size:.82rem!important}
+  body.page-review .rate small{font-size:.64rem!important}
+}
+
 /* MOBILE TITLE SPACING LOCK — final override for all page headers. */
 @media(max-width:760px){
   body.apple-ui .eyebrow,
