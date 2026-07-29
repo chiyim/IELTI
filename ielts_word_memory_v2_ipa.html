@@ -12,11 +12,6 @@
 <style>
 body.page-review .hint.is-correct{color:#259b62;font-weight:700}
 body.page-review .hint.is-incorrect{color:#d9831f;font-weight:700}
-body.page-review .study:active{transform:none!important}
-body.page-review .progress{display:none!important}
-body.page-review .wordarea .ipa{display:inline!important;min-height:0!important}
-body.page-review .wordarea .pos{display:inline-block!important;vertical-align:middle;margin:.05rem 0 0 .45rem!important;padding:.15rem .48rem!important;font-size:.72rem!important;line-height:1.2!important}
-body.page-review .wordarea .meaning{font-size:1.25rem!important;line-height:1.35!important}
 @media(max-width:760px){
   body.page-review.apple-ui .apple-tabbar{right:auto!important;bottom:max(.5rem,calc(env(safe-area-inset-bottom,0px) - 12px))!important;width:calc(100% - 1.5rem)!important}
   body.page-review.apple-ui.apple-nav-compact .apple-tabbar{width:3.55rem!important;height:3.55rem!important;min-height:3.55rem!important;max-height:3.55rem!important;padding:.27rem!important;grid-template-columns:1fr!important;border-radius:50%!important;place-items:center!important}
@@ -24,6 +19,14 @@ body.page-review .wordarea .meaning{font-size:1.25rem!important;line-height:1.35
   body.page-review.apple-ui.apple-nav-compact .apple-tabbar>a.active{display:grid!important;width:3rem!important;height:3rem!important;min-height:3rem!important;padding:0!important;margin:0 auto!important;grid-template-rows:1fr!important;row-gap:0!important;place-items:center!important;align-content:center!important;justify-content:center!important;line-height:0!important}
   body.page-review.apple-ui.apple-nav-compact .apple-tabbar>a.active em{display:none!important}
   body.page-review.apple-ui.apple-nav-compact .apple-tabbar>a.active span,body.page-review.apple-ui.apple-nav-compact .apple-tabbar>a.active svg{width:1.9rem!important;height:1.9rem!important}
+}
+@media(hover:none) and (pointer:coarse) and (max-width:760px) and (max-height:760px){
+  body.page-review .study,body.page-review .study *{transition:none!important}
+  body.page-review .study:active,body.page-review .study button:active{transform:none!important}
+  body.page-review .progress{display:none!important}
+  body.page-review .wordarea .ipa{display:inline!important;min-height:0!important}
+  body.page-review .wordarea .pos{display:inline-block!important;vertical-align:middle;margin:.05rem 0 0 .45rem!important;padding:.15rem .48rem!important;font-size:.72rem!important;line-height:1.2!important}
+  body.page-review .wordarea .meaning{font-size:1.25rem!important;line-height:1.35!important}
 }
 </style>
 </head>
@@ -82,5 +85,5 @@ function reveal(){let w=current();if(!w)return;$('word').textContent=w.en;$('ipa
 function rate(n){let w=current(),id=idOf(w),r;if(window.IELTI){syncingFromCore=true;try{r=IELTI.reviewCard(currentConfig().deck,id,n)}finally{syncingFromCore=false}}else{r={...rec(w)};r.reps=(r.reps||r.seen||0)+1;r.lapses=(r.lapses||0)+(n===0?1:0);r.due=n===0?addDays(0,10):addDays([0,1,3,7][n]);r.lastReviewed=new Date().toISOString();r.mastered=(r.reps||0)>=5}state[id]=r;save();studySessionActive=true;index++;saveSession();renderStats();show()}
 $('deckTabs').onclick=e=>{let b=e.target.closest('[data-deck]');if(b)switchDeck(b.dataset.deck)};$('speak').onclick=speakWord;$('reveal').onclick=reveal;$('meaning').onclick=reveal;$('ratings').onclick=e=>{let b=e.target.closest('[data-rate]');if(b)rate(+b.dataset.rate)};$('daily').onchange=()=>{savePrefs();clearSession();buildQueue(true)};$('category').onchange=()=>{savePrefs();clearSession();buildQueue(true)};$('dictMode').onchange=()=>{savePrefs();show()};$('autoSpeak').onchange=savePrefs;$('more').onclick=()=>{studySessionActive=true;bonus=10;clearSession();buildQueue(true)};$('dictate').onkeydown=e=>{if(e.key==='Enter')reveal()};$('reset').onclick=()=>{if(confirm(`确定清除「${currentConfig().label}」的间隔复习记录吗？${activeDeck==='class'?'分类记忆法中的“已熟悉”标记会保留。':''}`)){state=activeDeck==='class'?Object.fromEntries(Object.entries(state).filter(([,card])=>card.familiar).map(([id,card])=>[id,{familiar:true}])):{};save();bonus=0;clearSession();buildQueue(true)}};
 window.addEventListener('ielti-progress',applySyncedDeck);
-restorePrefs();populate();renderDeckTabs();buildQueue();initialRender=false;requestAnimationFrame(()=>{const study=document.querySelector('.study');if(study){window.scrollTo({top:Math.max(0,study.getBoundingClientRect().top+window.scrollY-8),behavior:'auto'});document.body.classList.add('apple-nav-compact')}});
+restorePrefs();populate();renderDeckTabs();buildQueue();initialRender=false;requestAnimationFrame(()=>{const study=document.querySelector('.study');if(study){window.scrollTo({top:Math.max(0,study.getBoundingClientRect().top+window.scrollY-8),behavior:'auto'});if(matchMedia('(hover:none) and (pointer:coarse) and (max-width:760px) and (max-height:760px)').matches)document.body.classList.add('apple-nav-compact')}});
 </script></body></html>
