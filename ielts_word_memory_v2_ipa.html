@@ -23,25 +23,23 @@ body.page-review .hint.is-incorrect{color:#d9831f;font-weight:700}
 @media(hover:none) and (pointer:coarse) and (max-width:760px) and (max-height:760px){
   body.page-review .study,body.page-review .study *{transition:none!important}
   body.page-review .study:active,body.page-review .study button:active{transform:none!important}
-  body.page-review .study:before{display:none!important}
+  body.page-review .study:before,body.page-review .study:after{content:none!important;display:none!important;pointer-events:none!important}
   body.page-review #studyContent{pointer-events:auto!important}
-  body.page-review .progress{display:none!important}
   body.page-review .wordarea .ipa{display:inline!important;min-height:0!important}
   body.page-review .wordarea .pos{display:inline-block!important;vertical-align:middle;margin:.05rem 0 0 .45rem!important;padding:.15rem .48rem!important;font-size:.72rem!important;line-height:1.2!important}
   body.page-review .wordarea .meaning{font-size:1.25rem!important;line-height:1.35!important}
 }
-body.page-review.small-square-device .app{padding:.35rem .65rem calc(4.7rem + var(--apple-safe-bottom))!important}
-body.page-review.small-square-device .top,body.page-review.small-square-device .stats,body.page-review.small-square-device .review-deck-tabs{display:none!important}
-body.page-review.small-square-device .layout{gap:0!important}
-body.page-review.small-square-device .study{height:calc(100dvh - 5.25rem - var(--apple-safe-bottom))!important;min-height:0!important;padding:.7rem .85rem!important}
+body.page-review.small-square-device .app{padding:.5rem .65rem calc(4.7rem + var(--apple-safe-bottom))!important}
+body.page-review.small-square-device .layout{gap:.75rem!important}
+body.page-review.small-square-device .study{height:auto!important;min-height:31rem!important;padding:.7rem .85rem!important}
 body.page-review.small-square-device #studyContent{height:100%;display:flex;flex-direction:column;pointer-events:auto!important}
 body.page-review.small-square-device .study,body.page-review.small-square-device .study *{transition:none!important}
 body.page-review.small-square-device .study:active,body.page-review.small-square-device .study button:active{transform:none!important}
-body.page-review.small-square-device .study:before,body.page-review.small-square-device .progress{display:none!important}
+body.page-review.small-square-device .study:before,body.page-review.small-square-device .study:after{content:none!important;display:none!important;pointer-events:none!important}
 body.page-review.small-square-device .study-head{font-size:.72rem!important}
 body.page-review.small-square-device .wordarea{flex:1;min-height:0;padding:.35rem .2rem!important}
 body.page-review.small-square-device .group{font-size:.66rem!important}
-body.page-review.small-square-device .word{font-size:clamp(2.15rem,7.6vw,3.15rem)!important;margin:.35rem 0 .1rem!important}
+body.page-review.small-square-device .word{font-size:clamp(2.5rem,9vw,3.65rem)!important;margin:.35rem 0 .1rem!important}
 body.page-review.small-square-device .ipa{display:inline!important;min-height:0!important;font-size:1rem!important}
 body.page-review.small-square-device .pos{display:inline-block!important;vertical-align:middle;margin:.05rem 0 0 .45rem!important;padding:.15rem .48rem!important;font-size:.72rem!important;line-height:1.2!important}
 body.page-review.small-square-device .meaning{margin:.45rem auto .1rem!important;font-size:1.25rem!important;line-height:1.35!important}
@@ -50,6 +48,12 @@ body.page-review.small-square-device .controls .btn{padding:.48rem .85rem!import
 body.page-review.small-square-device .ratings{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:.42rem!important;margin-top:.55rem!important}
 body.page-review.small-square-device .rate{padding:.5rem .15rem!important;font-size:.82rem!important}
 body.page-review.small-square-device .rate small{font-size:.64rem!important}
+@media(max-width:760px){
+  body.page-review .study.card,body.page-review .study.card:active{transform:none!important;transition:none!important}
+  body.page-review .study.card:before,body.page-review .study.card:after{content:none!important;display:none!important;pointer-events:none!important}
+  body.page-review .study.card>#studyContent,body.page-review .study.card>#empty{position:relative!important;z-index:2!important;pointer-events:auto!important}
+  body.page-review .study.card button{position:relative!important;z-index:3!important;pointer-events:auto!important}
+}
 </style>
 </head>
 <body class="apple-ui page-review apple-nav-hidden"><main class="app">
