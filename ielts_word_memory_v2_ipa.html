@@ -31,11 +31,12 @@ body.page-review .hint.is-incorrect{color:#d9831f;font-weight:700}
 }
 body.page-review.small-square-device .app{padding:.5rem .65rem calc(4.7rem + var(--apple-safe-bottom))!important}
 body.page-review.small-square-device .layout{gap:.75rem!important}
-body.page-review.small-square-device .study{height:auto!important;min-height:31rem!important;padding:.7rem .85rem!important}
+body.page-review.small-square-device .study{height:var(--review-study-height,auto)!important;min-height:0!important;padding:.7rem .85rem!important}
 body.page-review.small-square-device #studyContent{height:100%;display:flex;flex-direction:column;pointer-events:auto!important}
 body.page-review.small-square-device .study,body.page-review.small-square-device .study *{transition:none!important}
 body.page-review.small-square-device .study:active,body.page-review.small-square-device .study button:active{transform:none!important}
 body.page-review.small-square-device .study:before,body.page-review.small-square-device .study:after{content:none!important;display:none!important;pointer-events:none!important}
+body.page-review.small-square-device .progress{display:none!important}
 body.page-review.small-square-device .study-head{font-size:.72rem!important}
 body.page-review.small-square-device .wordarea{flex:1;min-height:0;padding:.35rem .2rem!important}
 body.page-review.small-square-device .group{font-size:.66rem!important}
@@ -44,6 +45,7 @@ body.page-review.small-square-device .ipa{display:inline!important;min-height:0!
 body.page-review.small-square-device .pos{display:inline-block!important;vertical-align:middle;margin:.05rem 0 0 .45rem!important;padding:.15rem .48rem!important;font-size:.72rem!important;line-height:1.2!important}
 body.page-review.small-square-device .meaning{margin:.45rem auto .1rem!important;font-size:1.25rem!important;line-height:1.35!important}
 body.page-review.small-square-device .hint{font-size:.7rem!important}
+body.page-review.small-square-device .controls{margin-top:auto!important}
 body.page-review.small-square-device .controls .btn{padding:.48rem .85rem!important;font-size:.8rem!important}
 body.page-review.small-square-device .ratings{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:.42rem!important;margin-top:.55rem!important}
 body.page-review.small-square-device .rate{padding:.5rem .15rem!important;font-size:.82rem!important}
@@ -112,5 +114,6 @@ function rate(n){let w=current(),id=idOf(w),r;if(window.IELTI){syncingFromCore=t
 function isSmallSquareDevice(){const short=Math.min(screen.width,screen.height),long=Math.max(screen.width,screen.height);return /Android/i.test(navigator.userAgent)&&long<=1300&&short/long>=.7}
 $('deckTabs').onclick=e=>{let b=e.target.closest('[data-deck]');if(b)switchDeck(b.dataset.deck)};$('speak').onclick=speakWord;$('reveal').onclick=reveal;$('meaning').onclick=reveal;$('ratings').onclick=e=>{let b=e.target.closest('[data-rate]');if(b)rate(+b.dataset.rate)};$('daily').onchange=()=>{savePrefs();clearSession();buildQueue(true)};$('category').onchange=()=>{savePrefs();clearSession();buildQueue(true)};$('dictMode').onchange=()=>{savePrefs();show()};$('autoSpeak').onchange=savePrefs;$('more').onclick=()=>{studySessionActive=true;bonus=10;clearSession();buildQueue(true)};$('dictate').onkeydown=e=>{if(e.key==='Enter')reveal()};$('reset').onclick=()=>{if(confirm(`确定清除「${currentConfig().label}」的间隔复习记录吗？${activeDeck==='class'?'分类记忆法中的“已熟悉”标记会保留。':''}`)){state=activeDeck==='class'?Object.fromEntries(Object.entries(state).filter(([,card])=>card.familiar).map(([id,card])=>[id,{familiar:true}])):{};save();bonus=0;clearSession();buildQueue(true)}};
 window.addEventListener('ielti-progress',applySyncedDeck);
-restorePrefs();populate();renderDeckTabs();buildQueue();initialRender=false;if(isSmallSquareDevice())document.body.classList.add('small-square-device');requestAnimationFrame(()=>{const study=document.querySelector('.study');if(study)window.scrollTo({top:Math.max(0,study.getBoundingClientRect().top+window.scrollY-8),behavior:'auto'})});
+function fitSmallStudyCard(){if(!document.body.classList.contains('small-square-device'))return;const study=document.querySelector('.study');if(!study)return;const top=Math.max(8,study.getBoundingClientRect().top);study.style.setProperty('--review-study-height',`${Math.max(0,Math.floor(window.innerHeight-top-86))}px`)}
+restorePrefs();populate();renderDeckTabs();buildQueue();initialRender=false;if(isSmallSquareDevice()){document.body.classList.add('small-square-device');window.addEventListener('resize',fitSmallStudyCard,{passive:true})}requestAnimationFrame(()=>{const study=document.querySelector('.study');if(study)window.scrollTo({top:Math.max(0,study.getBoundingClientRect().top+window.scrollY-8),behavior:'auto'});requestAnimationFrame(fitSmallStudyCard)});
 </script></body></html>
