@@ -452,6 +452,12 @@
         const y = Math.max(0, window.scrollY), delta = y - lastY;
         lastY = y;
         if (studyPage) {
+          if (y <= 4 && delta < 0) {
+            stopIdleTimer();
+            travel = 0;
+            setState('full');
+            return;
+          }
           if (!ready || expandedByTap || delta === 0) return;
           travel += Math.abs(delta);
           if (travel >= 48) { travel = 0; revealStudyNav(); }
