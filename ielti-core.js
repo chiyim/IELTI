@@ -421,7 +421,7 @@
       if (!nav || nav.dataset.autoHideInstalled) return;
       nav.dataset.autoHideInstalled = 'true';
       const mobile = matchMedia('(max-width:760px)');
-      const studyPage = pageClass === 'page-review';
+      const studyPage = pageClass === 'page-review' && document.body.classList.contains('small-square-device');
       let expandedByTap = false;
       let idleTimer = 0;
       let travel = 0;

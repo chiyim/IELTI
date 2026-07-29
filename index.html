@@ -36,7 +36,7 @@
 
   <section class="section data-manager" aria-labelledby="dataTitle"><div><h3 id="dataTitle">学习数据</h3><p>备份或恢复路线图、词表、分类词汇、间隔重复与语音拼写进度。</p><div class="backup-status" id="backupStatus" role="status" aria-live="polite"></div></div><div class="data-actions"><button class="btn" id="exportAllBtn" type="button">备份全部进度</button><button class="btn" id="importAllBtn" type="button">恢复备份</button><input type="file" id="importAllFile" accept="application/json,.json" hidden></div></section>
   <div class="foot" id="syncState">进度保存在本设备。</div>
-</main><script src="ielts-roadmap-data.js?v=20260728-5"></script><script src="ielti-config.js?v=20260728-5"></script><script src="ielti-core.js?v=20260729-17"></script><script>
+</main><script src="ielts-roadmap-data.js?v=20260728-5"></script><script src="ielti-config.js?v=20260728-5"></script><script src="ielti-core.js?v=20260729-18"></script><script>
 const STORAGE_KEY='ielts_g_plan_progress_v2',START_KEY='ielts_g_plan_start_v1',DAY=86400000;
 const $=id=>document.getElementById(id),weeks=window.IELTI_WEEKS||[];
 function readProgress(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||{}}catch{return{}}}
