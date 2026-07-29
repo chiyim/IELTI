@@ -416,6 +416,39 @@
       nav.addEventListener('touchcancel',clearPress,{passive:true});
       placeNavIndicator();addEventListener('resize',placeNavIndicator,{passive:true});
     }
+    const installMobileNavAutoHide = () => {
+      const nav = document.querySelector('.apple-tabbar');
+      if (!nav || nav.dataset.autoHideInstalled) return;
+      nav.dataset.autoHideInstalled = 'true';
+      const mobile = matchMedia('(max-width:760px)');
+      let expandedByTap = false;
+      const setState = state => {
+        const enabled = mobile.matches;
+        document.body.classList.toggle('apple-nav-hidden', enabled && state === 'hidden');
+        document.body.classList.toggle('apple-nav-compact', enabled && state === 'compact');
+      };
+      let lastY = window.scrollY, down = 0, up = 0, ticking = false;
+      const update = () => {
+        ticking = false;
+        if (!mobile.matches) { setState('full'); lastY = window.scrollY; return; }
+        const y = Math.max(0, window.scrollY), delta = y - lastY;
+        lastY = y;
+        if (y < 48) { down = 0; up = 0; expandedByTap = false; setState('full'); return; }
+        if (delta > 0) { down += delta; up = 0; if (down > 28) { expandedByTap = false; setState('compact'); } }
+        else if (delta < 0) { up -= delta; down = 0; if (up > 10 && !expandedByTap) setState('compact'); }
+      };
+      window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+      nav.addEventListener('click', event => {
+        const link = event.target.closest('a.active');
+        if (!mobile.matches || !document.body.classList.contains('apple-nav-compact') || !link || !nav.contains(link)) return;
+        event.preventDefault();
+        expandedByTap = true;
+        setState('full');
+      });
+      document.addEventListener('focusin', () => { expandedByTap = true; setState('full'); });
+      mobile.addEventListener('change', () => { down = 0; up = 0; expandedByTap = false; setState('full'); });
+    };
+    installMobileNavAutoHide();
     const themeControl = document.querySelector('.apple-theme-toggle') || document.getElementById('themeBtn');
     avatarControl = avatarControl || document.querySelector('.apple-rail-logo');
     const titleRow = title => { if (!title) return null; let row = title.parentElement?.classList.contains('apple-mobile-title-row') ? title.parentElement : null; if (!row) { const host = title.parentElement; host?.classList.add('apple-mobile-title-host'); row = document.createElement('div'); row.className = 'apple-mobile-title-row'; title.before(row); row.append(title); } return row; };

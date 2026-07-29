@@ -87,6 +87,8 @@ body.apple-ui .apple-mobile-title-row .apple-rail-logo:focus-visible{
 @media(max-width:760px){.apple-tabbar a svg{width:1.24rem;height:1.24rem;stroke-width:1.9}}
 @media(max-width:760px) and (prefers-reduced-transparency:reduce){body.apple-ui::after{background:linear-gradient(to bottom,transparent,var(--apple-bg) 62%);backdrop-filter:none;-webkit-backdrop-filter:none}}
 @media(max-width:760px){.apple-tabbar a{display:flex!important;align-items:center!important;justify-content:center!important;gap:.18rem!important;padding:.18rem .08rem!important}.apple-tabbar a span{display:grid!important;width:1.34rem!important;height:1.34rem!important;place-items:center!important;flex:0 0 1.34rem!important;line-height:0!important}.apple-tabbar a svg{width:1.32rem!important;height:1.32rem!important;stroke-width:1.9!important}.apple-tabbar a em{display:block!important;font-size:.82rem!important;font-weight:740!important;line-height:1!important;letter-spacing:0!important}.apple-tabbar a.active{gap:.16rem!important}}
+@media(max-width:760px){.apple-tabbar{right:auto!important;bottom:calc(.55rem + 15px + var(--apple-safe-bottom));width:calc(100% - 1.4rem);will-change:transform,opacity,width;transition:transform .32s cubic-bezier(.2,.8,.2,1),width .32s cubic-bezier(.2,.8,.2,1),height .32s cubic-bezier(.2,.8,.2,1),padding .32s cubic-bezier(.2,.8,.2,1),opacity .2s ease}.apple-tabbar a{transition:opacity .16s ease,transform .24s cubic-bezier(.2,.8,.2,1)!important}body.apple-ui.apple-nav-hidden .apple-tabbar{transform:translate3d(0,calc(100% + 1.5rem),0);opacity:0;pointer-events:none}body.apple-ui.apple-nav-compact .apple-tabbar{width:3.55rem;height:3.55rem;padding:.27rem;border-radius:50%;grid-template-columns:1fr;transform:translate3d(0,0,0)}body.apple-ui.apple-nav-compact .apple-tabbar>a:not(.active),body.apple-ui.apple-nav-compact .apple-nav-indicator{display:none!important}body.apple-ui.apple-nav-compact .apple-tabbar>a.active{min-height:3rem!important;width:3rem;padding:0!important;gap:0!important;border-radius:50%!important}body.apple-ui.apple-nav-compact .apple-tabbar>a.active em{display:none!important}body.apple-ui.apple-nav-compact .apple-tabbar>a.active span{width:1.55rem!important;height:1.55rem!important;flex-basis:1.55rem!important}body.apple-ui.apple-nav-compact .apple-tabbar>a.active svg{width:1.55rem!important;height:1.55rem!important;stroke-width:2!important}body.apple-ui.apple-nav-hidden::after{opacity:0}body.apple-ui::after{transition:opacity .18s ease}}
+@media(max-width:760px) and (prefers-reduced-motion:reduce){body.apple-ui.apple-nav-hidden .apple-tabbar{transform:none!important;opacity:0}}
 
 /* One compact title system across every phone page, based on the review centre. */
 @media(max-width:760px){body.page-today .wrap,body.page-roadmap .wrap,body.page-core .wrap,body.page-review .app{padding-top:.75rem!important}body.page-class>header{padding-top:.75rem!important}body.page-today .top,body.page-roadmap .hero,body.page-core .hero,body.page-review .top{margin:0 0 .55rem!important;padding:0 .15rem .4rem!important}body.page-class .htop{margin:0 0 .4rem;align-items:flex-end}body.apple-ui .page-kicker,body.page-review .brand small,body.page-today .eyebrow{display:block;margin:0 0 .22rem!important;font-size:.66rem!important;font-weight:800!important;line-height:1.2!important;letter-spacing:.12em!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}body.page-roadmap .hero h1,body.page-core .hero h1,body.page-class .htop h1,body.page-today .top h1,body.page-review .brand h1{margin:0!important;font-size:clamp(1.55rem,6.7vw,1.72rem)!important;font-weight:760!important;line-height:1.08!important;letter-spacing:-.035em!important;text-wrap:balance}body .apple-mobile-title-row{min-height:2.9rem;align-items:center;gap:.45rem}body.page-class .page-title-brand h1{line-height:1.08!important}body.page-roadmap .hero .sub,body.page-core .hero .sub,body.page-review .brand p,body.page-today .date{display:none!important}}
@@ -649,6 +651,24 @@ body.page-today .ring b{
   }
 }
 
+/* MOBILE NAV COMPACT STATE — final override, after every mobile navigation lock. */
+@media(max-width:760px){
+  .apple-tabbar{
+    right:auto!important;
+    bottom:calc(.5rem + 15px + env(safe-area-inset-bottom,0px))!important;
+    width:calc(100% - 1.5rem)!important;
+    transition:transform .32s cubic-bezier(.2,.8,.2,1),width .32s cubic-bezier(.2,.8,.2,1),height .32s cubic-bezier(.2,.8,.2,1),padding .32s cubic-bezier(.2,.8,.2,1),opacity .2s ease!important;
+  }
+  body.apple-ui.apple-nav-hidden .apple-tabbar{transform:translate3d(0,calc(100% + 1.5rem),0)!important;opacity:0!important;pointer-events:none!important}
+  body.apple-ui.apple-nav-compact .apple-tabbar{width:3.55rem!important;height:3.55rem!important;min-height:3.55rem!important;max-height:3.55rem!important;padding:.27rem!important;grid-template-columns:1fr!important;border-radius:50%!important;transform:translate3d(0,0,0)!important;place-items:center!important}
+  body.apple-ui.apple-nav-compact .apple-tabbar>a:not(.active),body.apple-ui.apple-nav-compact .apple-nav-indicator{display:none!important}
+  body.apple-ui.apple-nav-compact .apple-tabbar>a.active{display:grid!important;width:3rem!important;height:3rem!important;min-height:3rem!important;padding:0!important;margin:0 auto!important;border-radius:50%!important;grid-template-rows:1fr!important;row-gap:0!important;place-items:center!important;align-content:center!important;justify-content:center!important;line-height:0!important}
+  body.apple-ui.apple-nav-compact .apple-tabbar>a.active em{display:none!important}
+  body.apple-ui.apple-nav-compact .apple-tabbar>a.active span{width:1.9rem!important;height:1.9rem!important;min-width:1.9rem!important;min-height:1.9rem!important;flex-basis:1.9rem!important}
+  body.apple-ui.apple-nav-compact .apple-tabbar>a.active svg{width:1.9rem!important;height:1.9rem!important;stroke-width:2.1!important}
+}
+@media(max-width:760px) and (prefers-reduced-motion:reduce){body.apple-ui.apple-nav-hidden .apple-tabbar{transform:none!important;opacity:0!important}}
+
 /* MOBILE TITLE SPACING LOCK — final override for all page headers. */
 @media(max-width:760px){
   body.apple-ui .eyebrow,
@@ -701,6 +721,47 @@ body.page-today .ring b{
     height:1.25rem!important;
   }
 }
+
+/* MOBILE NAV COMPACT STATE — this intentionally follows the final navigation lock. */
+@media(max-width:760px){
+  .apple-tabbar{
+    right:auto!important;
+    bottom:calc(.5rem + 15px + env(safe-area-inset-bottom,0px))!important;
+    width:calc(100% - 1.5rem)!important;
+    transition:transform .32s cubic-bezier(.2,.8,.2,1),width .32s cubic-bezier(.2,.8,.2,1),height .32s cubic-bezier(.2,.8,.2,1),padding .32s cubic-bezier(.2,.8,.2,1),opacity .2s ease!important;
+  }
+  body.apple-ui.apple-nav-hidden .apple-tabbar{
+    transform:translate3d(0,calc(100% + 1.5rem),0)!important;
+    opacity:0!important;
+    pointer-events:none!important;
+  }
+  body.apple-ui.apple-nav-compact .apple-tabbar{
+    width:3.55rem!important;
+    height:3.55rem!important;
+    min-height:3.55rem!important;
+    max-height:3.55rem!important;
+    padding:.27rem!important;
+    grid-template-columns:1fr!important;
+    border-radius:50%!important;
+    transform:translate3d(0,0,0)!important;
+  }
+  body.apple-ui.apple-nav-compact .apple-tabbar>a:not(.active),
+  body.apple-ui.apple-nav-compact .apple-nav-indicator{display:none!important}
+  body.apple-ui.apple-nav-compact .apple-tabbar>a.active{
+    display:grid!important;
+    width:3rem!important;
+    height:3rem!important;
+    min-height:3rem!important;
+    padding:0!important;
+    margin:0 auto!important;
+    border-radius:50%!important;
+    place-items:center!important;
+  }
+  body.apple-ui.apple-nav-compact .apple-tabbar>a.active em{display:none!important}
+  body.apple-ui.apple-nav-compact .apple-tabbar>a.active span{width:1.55rem!important;height:1.55rem!important;min-width:1.55rem!important;min-height:1.55rem!important;flex-basis:1.55rem!important}
+  body.apple-ui.apple-nav-compact .apple-tabbar>a.active svg{width:1.55rem!important;height:1.55rem!important;stroke-width:2!important}
+}
+@media(max-width:760px) and (prefers-reduced-motion:reduce){body.apple-ui.apple-nav-hidden .apple-tabbar{transform:none!important;opacity:0!important}}
 @media(min-width:761px){
   .apple-tabbar{
     --rail-item:3.08rem;
@@ -2025,3 +2086,16 @@ body.page-class .w .spk{
     align-self:auto!important;
   }
 }
+
+/* MOBILE NAV COMPACT STATE — FINAL override after all mobile locks. */
+@media(max-width:760px){
+  .apple-tabbar{right:auto!important;bottom:calc(.5rem + 8px + env(safe-area-inset-bottom,0px))!important;width:calc(100% - 1.5rem)!important;transition:transform .32s cubic-bezier(.2,.8,.2,1),width .32s cubic-bezier(.2,.8,.2,1),height .32s cubic-bezier(.2,.8,.2,1),padding .32s cubic-bezier(.2,.8,.2,1),opacity .2s ease!important}
+  body.apple-ui.apple-nav-hidden .apple-tabbar{transform:translate3d(0,calc(100% + 1.5rem),0)!important;opacity:0!important;pointer-events:none!important}
+  body.apple-ui.apple-nav-compact .apple-tabbar{width:3.55rem!important;height:3.55rem!important;min-height:3.55rem!important;max-height:3.55rem!important;padding:.27rem!important;grid-template-columns:1fr!important;border-radius:50%!important;transform:translate3d(0,0,0)!important;place-items:center!important}
+  body.apple-ui.apple-nav-compact .apple-tabbar>a:not(.active),body.apple-ui.apple-nav-compact .apple-nav-indicator{display:none!important}
+  body.apple-ui.apple-nav-compact .apple-tabbar>a.active{display:grid!important;width:3rem!important;height:3rem!important;min-height:3rem!important;padding:0!important;margin:0 auto!important;border-radius:50%!important;grid-template-rows:1fr!important;row-gap:0!important;place-items:center!important;align-content:center!important;justify-content:center!important;line-height:0!important}
+  body.apple-ui.apple-nav-compact .apple-tabbar>a.active em{display:none!important}
+  body.apple-ui.apple-nav-compact .apple-tabbar>a.active span{width:1.9rem!important;height:1.9rem!important;min-width:1.9rem!important;min-height:1.9rem!important;flex-basis:1.9rem!important}
+  body.apple-ui.apple-nav-compact .apple-tabbar>a.active svg{width:1.9rem!important;height:1.9rem!important;stroke-width:2.1!important}
+}
+@media(max-width:760px) and (prefers-reduced-motion:reduce){body.apple-ui.apple-nav-hidden .apple-tabbar{transform:none!important;opacity:0!important}}
