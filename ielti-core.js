@@ -445,7 +445,6 @@
         expandedByTap = true;
         setState('full');
       });
-      document.addEventListener('focusin', () => { expandedByTap = true; setState('full'); });
       mobile.addEventListener('change', () => { down = 0; up = 0; expandedByTap = false; setState('full'); });
     };
     installMobileNavAutoHide();
