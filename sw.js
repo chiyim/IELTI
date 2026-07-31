@@ -1,4 +1,4 @@
-const CACHE='ielti-shell-v185';
+const CACHE='ielti-shell-v187';
 const SHELL=['./','./index.html','./apple-ui.css','./eink-ui.css','./ielti-config.js','./ielti-core.js','./ielts-roadmap-data.js','./manifest.webmanifest','./icon.png','./icon_local.png','./hero-flowers.png','./ielts-roadmap.html','./ielts-core-vocabulary.html','./ielts-vocabulary-categories.html','./ielts_word_memory_v2_ipa.html','./ielts-video-player.html','./121-letter-combinations.html'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL))));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key))))));

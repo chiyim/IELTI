@@ -56,9 +56,9 @@ main{max-width:920px;margin:0 auto;padding:14px}
 .w{display:flex;align-items:baseline;gap:7px;background:var(--panel);
   border:1px solid var(--line);border-radius:9px;padding:8px 11px;cursor:pointer;transition:.12s}
 .w:hover{border-color:var(--accent)}
-.w .en{color:var(--en);font-weight:600;font-size:19px}
+.w .en{color:var(--en);font-weight:600;font-size:17px}
 .w .pos{color:var(--pos);font-size:13px;font-style:italic}
-.w .zh{color:var(--zh);font-size:17px;margin-left:auto;text-align:right;cursor:pointer}
+.w .zh{color:var(--zh);font-size:15px;cursor:pointer}
 .w .spk{flex:none;font-size:13px;opacity:.5;cursor:pointer;user-select:none;padding:8px 10px;margin:-8px -10px -8px 0;transition:.12s}
 .w .spk:hover{opacity:1;transform:scale(1.2)}
 .w .spk.playing{opacity:1;color:var(--accent)}
@@ -71,6 +71,9 @@ main{max-width:920px;margin:0 auto;padding:14px}
 .hide-en .w .en,.hide-en .w .pos,.hide-en .w .ipa{filter:blur(5px);user-select:none;transition:filter .15s}
 .hide-en .w:hover .en,.hide-en .w:hover .pos,.hide-en .w:hover .ipa{filter:blur(3px)}
 .w .zh.reveal,.w .en.reveal,.w .pos.reveal,.w .ipa.reveal{filter:none!important}
+.w.long-mastered{opacity:1!important;background:color-mix(in srgb,var(--apple-green) 6%,var(--apple-solid))!important;border:0.3px solid color-mix(in srgb,var(--apple-green) 38%,var(--apple-line))!important;box-shadow:inset 4px 0 0 var(--apple-green),0 4px 16px rgba(0,0,0,.05)!important}
+body.page-class .w.long-mastered .en,body.page-class .w.long-mastered .zh{color:#747a88!important}
+.long-mastered .mastery-state{background:var(--apple-green)!important;color:#fff!important;border:1px solid var(--apple-green)!important}
 .empty{color:var(--muted);text-align:center;padding:40px}
 /* flashcard */
 .fc-wrap{position:fixed;inset:0;background:rgba(8,10,14,.92);z-index:50;
@@ -123,7 +126,7 @@ main{max-width:920px;margin:0 auto;padding:14px}
   h1{font-size:16px}
 }
 </style>
-<link rel="stylesheet" href="apple-ui.css?v=20260730-33">
+<link rel="stylesheet" href="apple-ui.css?v=20260731-1">
   <link rel="stylesheet" href="eink-ui.css?v=20260728-14">
 </head>
 <body class="apple-ui page-class"><header>
@@ -243,7 +246,7 @@ function render(){
         const k=progress.mastered?' known long-mastered':known.has(id(w))?' known':'';
         const stateLabel=progress.mastered?'已掌握':known.has(id(w))?'已熟悉':'';
         html+=`<div class="w${k}" data-id="${encodeURIComponent(id(w))}">
-          <span class="w-word"><span class="en">${w.en}</span><span class="ipa">${w.ipa||''}</span></span><span class="pos">${w.pos||''}</span><span class="trl" data-en="${w.en.replace(/"/g,'&quot;')}">详</span>${stateLabel?`<span class="mastery-state">${stateLabel}</span>`:''}<span class="zh">${w.zh}</span><span class="spk" data-en="${w.en.replace(/"/g,'&quot;')}">🔊</span></div>`;
+          <span class="w-word"><span class="en">${w.en}</span><span class="ipa">${w.ipa||''}</span><span class="zh">${w.zh}</span></span><span class="pos">${w.pos||''}</span><span class="trl" data-en="${w.en.replace(/"/g,'&quot;')}">详</span>${stateLabel?`<span class="mastery-state">${stateLabel}</span>`:''}<span class="spk" data-en="${w.en.replace(/"/g,'&quot;')}">🔊</span></div>`;
       });
       html+=`</div></div>`;
     }

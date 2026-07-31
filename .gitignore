@@ -6,3 +6,4 @@
 *.json.backup
 node_modules/
 deploy/
+.aider*
