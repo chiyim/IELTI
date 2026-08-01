@@ -263,13 +263,19 @@
 }
 
 :root[data-display="eink"] body.page-today .hero{
-  border:2px solid #111!important;
+  border:0!important;
+  box-shadow:inset 0 0 0 2px #111!important;
 }
 
 :root[data-display="eink"] body.page-today .hero > *{
   position:relative!important;
   z-index:2!important;
   color:#050505!important;
+}
+
+:root[data-display="eink"] body.page-today .hero > .hero-flowers{
+  position:absolute!important;
+  z-index:3!important;
 }
 
 :root[data-display="eink"] body.page-today .hero h2,
@@ -429,6 +435,25 @@
 :root[data-display="eink"] img{
   filter:grayscale(1) contrast(1.08)!important;
 }
+
+/* Charts use deliberate ink values instead of relying on grayscale conversion. */
+:root[data-display="eink"] .active-period-gauge .period-arc:nth-child(1),
+:root[data-display="eink"] .active-period-legend .morning{stroke:#111!important;color:#111!important}
+:root[data-display="eink"] .active-period-gauge .period-arc:nth-child(2),
+:root[data-display="eink"] .active-period-legend .afternoon{stroke:#555!important;color:#555!important}
+:root[data-display="eink"] .active-period-gauge .period-arc:nth-child(3),
+:root[data-display="eink"] .active-period-legend .evening{stroke:#8a8a8a!important;color:#6b6b6b!important}
+:root[data-display="eink"] .performance-chart{background:linear-gradient(180deg,#fff 18%,#f0f0f0 100%)!important}
+:root[data-display="eink"] .performance-grid-line{stroke:#b8b8b8!important}
+:root[data-display="eink"] .performance-line.accuracy{stroke:#111!important}
+:root[data-display="eink"] .performance-line.forget{stroke:#555!important}
+:root[data-display="eink"] .performance-line.mastery{stroke:#8a8a8a!important}
+:root[data-display="eink"] .performance-dot.accuracy{fill:#111!important}
+:root[data-display="eink"] .performance-dot.forget{fill:#555!important}
+:root[data-display="eink"] .performance-dot.mastery{fill:#8a8a8a!important}
+:root[data-display="eink"] .performance-legend .accuracy{color:#111!important}
+:root[data-display="eink"] .performance-legend .forget{color:#555!important}
+:root[data-display="eink"] .performance-legend .mastery{color:#6b6b6b!important}
 
 @media (monochrome){
   :root:not([data-display]){

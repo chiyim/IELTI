@@ -674,6 +674,17 @@ body.page-today .ring b{
   body.page-roadmap .phase-tabs:before{left:var(--phase-indicator-left,.3rem)!important;width:var(--phase-indicator-width,calc((100% - 1.6rem)/5))!important;transform:none!important;transition:left .38s cubic-bezier(.2,.8,.2,1),width .38s cubic-bezier(.2,.8,.2,1),background-color .22s ease!important}
 }
 
+@media(max-width:700px){
+  body.page-roadmap .phase-donut-legend{display:none!important}
+  body.page-roadmap .phase-donut-body{justify-content:center!important}
+}
+
+@media(min-width:721px){
+  body.page-today .hero,
+  :root[data-display="eink"] body.page-today .hero{height:15.75rem!important;min-height:15.75rem!important;padding:1rem 1.45rem!important}
+  body.page-today .hero-playground{min-height:0!important;height:13.75rem!important}
+}
+
 /* Review study surface: no decorative overlay may sit above the card controls. */
 body.page-review .study{
   background:

@@ -118,7 +118,7 @@ input[type=checkbox]{accent-color:#5B6CF5}
 .postpone-btn { font-size: 12.5px; color: #585885; text-decoration: underline; cursor: pointer; float: right; margin-right: 16px; transition: color .15s; }
 .postpone-btn:hover { color: #5B6CF5; }
 </style>
-<link rel="stylesheet" href="apple-ui.css?v=20260730-36">
+<link rel="stylesheet" href="apple-ui.css?v=20260730-37">
   <link rel="stylesheet" href="eink-ui.css?v=20260728-5">
 </head>
 <body class="apple-ui page-roadmap"><div class="wrap">
@@ -421,21 +421,28 @@ function renderPhaseDonut() {
   const UNIT = 100;
   const data = [], colors = [], labels = [], radii = [];
   const chartContext = canvas.getContext("2d");
-  const phaseGradient = (color, startAlpha, endAlpha) => {
+  const phaseGradient = (startColor, endColor, startAlpha, endAlpha) => {
     const gradient = chartContext.createLinearGradient(0, 0, canvas.width || 300, canvas.height || 300);
-    gradient.addColorStop(0, hexToRgba(color, startAlpha));
-    gradient.addColorStop(.52, hexToRgba(color, (startAlpha + endAlpha) / 2));
-    gradient.addColorStop(1, hexToRgba(color, endAlpha));
+    gradient.addColorStop(0, hexToRgba(startColor, startAlpha));
+    gradient.addColorStop(.52, hexToRgba(startColor, (startAlpha + endAlpha) / 2));
+    gradient.addColorStop(1, hexToRgba(endColor, endAlpha));
     return gradient;
   };
   const R = 18; // 阶段外边界的圆角半径，内部拼接处不设圆角，保证同一阶段两段弧度连贯
-  PHASES.forEach(p => {
+  const phasePalette = [
+    ["#4aa8ff", "#1261b5"],
+    ["#f3b23c", "#b86b08"],
+    ["#61b985", "#1e774a"],
+    ["#ec6f8b", "#b93e5a"]
+  ];
+  PHASES.forEach((p, index) => {
     const t = totals[p.key];
     const ratio = t.total ? t.done / t.total : 0;
     const doneUnits = UNIT * ratio;
     const remainUnits = UNIT - doneUnits;
+    const [startColor, endColor] = phasePalette[index];
     data.push(doneUnits, remainUnits);
-    colors.push(phaseGradient(p.color, 1, .76), phaseGradient(p.color, .55, .34));
+    colors.push(phaseGradient(startColor, endColor, 1, .92), phaseGradient(startColor, endColor, .55, .34));
     labels.push(p.name + " 已打卡", p.name + " 未打卡");
     radii.push(
       { outerStart: R, innerStart: R, outerEnd: 0, innerEnd: 0 },
