@@ -35,8 +35,8 @@ h1{font-size:17px;margin:0;font-weight:700;letter-spacing:.5px}
 .search{flex:1;min-width:140px;background:var(--panel2);border:1px solid var(--line);
   color:var(--txt);padding:8px 12px;border-radius:10px;font-size:14px}
 .search:focus{outline:none;border-color:var(--accent)}
-.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px;align-items:center}
-.days{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px;align-items:center}
+.days{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
 .day-chip{background:var(--chip);border:1px solid var(--line);color:var(--muted);
   padding:4px 9px;border-radius:20px;cursor:pointer;font-size:12px;white-space:nowrap}
 .day-chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
@@ -45,10 +45,10 @@ header.collapsed .controls,header.collapsed .days{display:none}
 #collapseBtn{transition:transform .2s;font-size:26px;line-height:1;padding:2px 8px}
 header.collapsed #collapseBtn{transform:rotate(-90deg)}
 main{max-width:920px;margin:0 auto;padding:14px}
-.daysec{margin-bottom:26px}
-.day-h{font-size:17px;font-weight:700;color:var(--accent2);margin:14px 0 4px;
-  position:sticky;top:0;padding:4px 0}
-.grp{margin:14px 0 6px}
+.daysec{margin-bottom:.8rem}
+.day-h{font-size:17px;font-weight:700;color:var(--accent2);margin:2px 0 2px;
+  position:sticky;top:0;padding:0}
+.grp{margin:4px 0 2px}
 .grp-h{display:inline-block;font-size:15px;font-weight:600;background:var(--panel2);
   color:var(--txt);padding:3px 10px;border-radius:7px;border-left:3px solid var(--accent)}
 .grp-cnt{color:var(--muted);font-size:11px;margin-left:6px}
@@ -66,6 +66,8 @@ main{max-width:920px;margin:0 auto;padding:14px}
 .w .ipa{font-size:15px;color:var(--muted);letter-spacing:.3px;line-height:1.2}
 .w.known{opacity:.4}
 .w.known .en{text-decoration:line-through}
+/* 已熟悉和已掌握的英文单词字号缩小一号 */
+body.page-class .w.known .en,body.page-class .w.long-mastered .en{font-size:1.15rem!important}
 .hide-zh .w .zh{filter:blur(5px);user-select:none;transition:filter .15s}
 .hide-zh .w:hover .zh{filter:blur(3px)}
 .hide-en .w .en,.hide-en .w .pos,.hide-en .w .ipa{filter:blur(5px);user-select:none;transition:filter .15s}
@@ -73,7 +75,7 @@ main{max-width:920px;margin:0 auto;padding:14px}
 .w .zh.reveal,.w .en.reveal,.w .pos.reveal,.w .ipa.reveal{filter:none!important}
 .w.long-mastered{opacity:1!important;background:color-mix(in srgb,var(--apple-green) 6%,var(--apple-solid))!important;border:0.3px solid color-mix(in srgb,var(--apple-green) 38%,var(--apple-line))!important;box-shadow:inset 4px 0 0 var(--apple-green),0 4px 16px rgba(0,0,0,.05)!important}
 body.page-class .w.long-mastered .en,body.page-class .w.long-mastered .zh{color:#747a88!important}
-.long-mastered .mastery-state{background:var(--apple-green)!important;color:#fff!important;border:1px solid var(--apple-green)!important}
+.long-mastered .mastery-state{background:color-mix(in srgb,var(--apple-green) 22%,transparent)!important;color:color-mix(in srgb,var(--apple-green) 78%,#000)!important;border:1px solid color-mix(in srgb,var(--apple-green) 34%,transparent)!important}
 .empty{color:var(--muted);text-align:center;padding:40px}
 /* flashcard */
 .fc-wrap{position:fixed;inset:0;background:rgba(8,10,14,.92);z-index:50;
@@ -120,13 +122,17 @@ body.page-class .w.long-mastered .en,body.page-class .w.long-mastered .zh{color:
   .grid{grid-template-columns:1fr}
   .w{padding:11px 13px}
   .w .en{font-size:22px}
+  body.page-class .w.known .en,body.page-class .w.long-mastered .en{font-size:1.35rem!important}
   .w .pos{font-size:15px}
   .w .zh{font-size:19px}
   .w .spk{font-size:16px}
   h1{font-size:16px}
 }
-</style>
-<link rel="stylesheet" href="apple-ui.css?v=20260731-1">
+
+body.page-class .w .zh{font-weight:400!important}body.page-class .fc-wrap .card .fzh{font-weight:400!important}
+body.page-class main .w .en{font-weight:500!important}
+body.page-class .fc-wrap .card .fen{font-weight:600!important}</style>
+<link rel="stylesheet" href="apple-ui.css?v=20260801-6">
   <link rel="stylesheet" href="eink-ui.css?v=20260728-14">
 </head>
 <body class="apple-ui page-class"><header>
