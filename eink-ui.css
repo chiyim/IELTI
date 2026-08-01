@@ -262,6 +262,10 @@
   content:none!important;
 }
 
+:root[data-display="eink"] body.page-today .hero-bubbles{
+  display:none!important;
+}
+
 :root[data-display="eink"] body.page-today .hero{
   border:0!important;
   box-shadow:inset 0 0 0 2px #111!important;

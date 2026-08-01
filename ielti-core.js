@@ -108,10 +108,14 @@
   function normalizeCard(card = {}) {
     return { reps: card.reps || card.level || 0, lapses: card.lapses || 0, interval: card.interval || 0, ease: card.ease || 2.5, due: card.due || null, lastReviewed: card.lastReviewed || card.last || null, familiar: !!card.familiar, mastered: !!card.mastered, familiarUpdatedAt: card.familiarUpdatedAt || null, masteredUpdatedAt: card.masteredUpdatedAt || null };
   }
+  function isLongMastered(card) {
+    const normalized = normalizeCard(card);
+    return normalized.mastered && normalized.reps >= 3 && normalized.interval >= 21 && !!normalized.lastReviewed;
+  }
   const wordPart = value => String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
   const wordId = word => [word.day, word.group, word.en].map(wordPart).join('|');
   function migrateClassWords(words = []) {
-    const deck = model.vocab.class ||= {}, legacySrs = parse('ielts_srs_v2', {}), legacyFamiliar = new Set([...parse('wclass_known_v1', []), ...parse('wclass_familiar_v1', [])]);
+    const deck = model.vocab.class ||= {}, legacySrs = parse('ielts_srs_v2', {}), legacyFamiliar = new Set(parse('wclass_familiar_v1', []));
     const migrated = {};
     const strongest = cards => cards.filter(Boolean).map(normalizeCard).sort((a, b) => {
       const time = new Date(b.lastReviewed || 0) - new Date(a.lastReviewed || 0);
@@ -130,6 +134,25 @@
     if (changed) save();
     return migrated;
   }
+  function demoteLegacyClassMastery() {
+    let changed = false;
+    const stamp = nowIso();
+    Object.entries(model.vocab.class || {}).forEach(([id, value]) => {
+      const card = normalizeCard(value);
+      const convertedByPreviousMigration = !card.mastered && card.familiar && !card.lastReviewed && card.masteredUpdatedAt && card.masteredUpdatedAt === card.familiarUpdatedAt;
+      if (convertedByPreviousMigration) {
+        model.vocab.class[id] = normalizeCard({ ...card, familiar: false, familiarUpdatedAt: null });
+        changed = true;
+        return;
+      }
+      // A long-term status is valid only after a recorded SRS review sequence.
+      const legacyPromotion = card.mastered && !isLongMastered(card);
+      if (!legacyPromotion) return;
+      model.vocab.class[id] = normalizeCard({ ...card, mastered: false, masteredUpdatedAt: stamp });
+      changed = true;
+    });
+    return changed;
+  }
   function migrate() {
     let changed = !localStorage.getItem(KEY);
     const road = parse('ielts_g_plan_progress_v2', {});
@@ -138,10 +161,11 @@
     if (!model.roadmap.startDate && start) { model.roadmap.startDate = start; changed = true; }
     const core = parse('ielts_vocab_mastered_v1', {});
     Object.keys(core).forEach(id => { if (core[id] && !model.vocab.core[id]) { model.vocab.core[id] = normalizeCard({ reps: 3, interval: 30, mastered: true }); changed = true; } });
-    const known = [...new Set([...parse('wclass_known_v1', []), ...parse('wclass_familiar_v1', [])])];
-    known.forEach(id => { if (!model.vocab.class[id]) { model.vocab.class[id] = normalizeCard({ reps: 3, interval: 30, mastered: true }); changed = true; } });
+    const known = parse('wclass_familiar_v1', []);
+    known.forEach(id => { if (!model.vocab.class[id]) { model.vocab.class[id] = normalizeCard({ familiar: true }); changed = true; } });
     const srs = parse('ielts_srs_v2', {});
     Object.entries(srs).forEach(([id, card]) => { if (!model.vocab.class[id]) { model.vocab.class[id] = normalizeCard(card); changed = true; } });
+    if (demoteLegacyClassMastery()) changed = true;
     const phonics = normalizePhonics(parse('ielti_phonics_121_v1', {}));
     if (phonics.learned.length || phonics.reviews.length || phonics.quiz.total) {
       const current = normalizePhonics(model.phonics);
@@ -226,7 +250,7 @@
       if (rating === 3) { card.ease += 0.15; card.interval = card.reps === 1 ? 4 : Math.max(7, Math.round((card.interval || 3) * card.ease * 1.3)); }
       card.due = new Date(now + card.interval * DAY).toISOString();
     }
-    card.lastReviewed = nowIso(); card.mastered = card.reps >= 3 && card.interval >= 21; cards[id] = card; markActivity('reviews'); markActivity(wasNew ? 'newWords' : 'reviewWords'); if (rating === 0) markActivity('forgotten'); if (!wasMastered && card.mastered) markActivity('newMastered'); save(); return card;
+    card.lastReviewed = nowIso(); card.mastered = card.reps >= 3 && card.interval >= 21; if (card.mastered !== wasMastered) card.masteredUpdatedAt = card.lastReviewed; cards[id] = card; markActivity('reviews'); markActivity(wasNew ? 'newWords' : 'reviewWords'); if (rating === 0) markActivity('forgotten'); if (!wasMastered && card.mastered) markActivity('newMastered'); save(); return card;
   }
   function setRoadmap(completed, startDate) { model.roadmap.completed = completed || {}; if (typeof startDate === 'string') model.roadmap.startDate = startDate; save(); }
   function setMastered(deck, ids) { const cards = model.vocab[deck] ||= {}, stamp = nowIso(); const wanted = new Set(ids); Object.keys(cards).forEach(id => { if (cards[id].mastered && !wanted.has(id)) cards[id] = normalizeCard({ ...cards[id], mastered: false, masteredUpdatedAt: stamp }); }); wanted.forEach(id => { cards[id] = normalizeCard({ ...cards[id], reps: Math.max(3, cards[id]?.reps || 0), interval: Math.max(30, cards[id]?.interval || 0), mastered: true, masteredUpdatedAt: cards[id]?.mastered ? cards[id]?.masteredUpdatedAt : stamp }); }); save(); }
@@ -243,7 +267,7 @@
   function setPhonics(value) { model.phonics = normalizePhonics(value); save(); return model.phonics; }
   function getDeck(deck) { return model.vocab[deck] || {}; }
   function dueCount(deck) { const now = Date.now(); return Object.values(getDeck(deck)).filter(c => c.due && new Date(c.due).getTime() <= now).length; }
-  function summary() { const completed = Object.values(model.roadmap.completed).filter(Boolean).length; const core = Object.values(model.vocab.core); const cls = Object.values(model.vocab.class); const start = model.roadmap.startDate ? new Date(model.roadmap.startDate + 'T00:00:00') : null; const day = start ? Math.max(1, Math.floor((Date.now() - start.getTime()) / DAY) + 1) : 1; return { day, week: Math.min(26, Math.ceil(day / 7)), completed, coreMastered: core.filter(c => c.mastered).length, classMastered: cls.filter(c => c.mastered).length, due: dueCount('core') + dueCount('class'), today: model.activity[localDay()] || { reviews: 0, courses: 0, studySeconds: 0, videoSeconds: 0 } }; }
+  function summary() { const completed = Object.values(model.roadmap.completed).filter(Boolean).length; const core = Object.values(model.vocab.core); const cls = Object.values(model.vocab.class); const start = model.roadmap.startDate ? new Date(model.roadmap.startDate + 'T00:00:00') : null; const day = start ? Math.max(1, Math.floor((Date.now() - start.getTime()) / DAY) + 1) : 1; return { day, week: Math.min(26, Math.ceil(day / 7)), completed, coreMastered: core.filter(c => c.mastered).length, classMastered: cls.filter(isLongMastered).length, due: dueCount('core') + dueCount('class'), today: model.activity[localDay()] || { reviews: 0, courses: 0, studySeconds: 0, videoSeconds: 0 } }; }
   function exportBackup() {
     const data = {};
     BACKUP_KEYS.forEach(key => { const value = localStorage.getItem(key); if (value !== null) data[key] = value; });
@@ -264,7 +288,7 @@
   }
   function mergeCard(localCard, remoteCard) {
     const local = normalizeCard(localCard), remote = normalizeCard(remoteCard);
-    const base = new Date(remote.lastReviewed || 0) > new Date(local.lastReviewed || 0) ? remote : local;
+    const base = !localCard ? remote : !remoteCard ? local : new Date(remote.lastReviewed || 0) > new Date(local.lastReviewed || 0) ? remote : local;
     const chooseFlag = (flag, stamp) => {
       const lt = new Date(local[stamp] || 0).getTime(), rt = new Date(remote[stamp] || 0).getTime();
       if (rt > lt) return { value: remote[flag], updatedAt: remote[stamp] };
@@ -274,7 +298,7 @@
     const familiar = chooseFlag('familiar', 'familiarUpdatedAt'), mastered = chooseFlag('mastered', 'masteredUpdatedAt');
     return normalizeCard({ ...base, familiar: familiar.value, familiarUpdatedAt: familiar.updatedAt, mastered: mastered.value, masteredUpdatedAt: mastered.updatedAt });
   }
-  function merge(remote) { if (!remote || remote.version !== 3) return false; Object.entries(remote.roadmap?.completed || {}).forEach(([k, v]) => { if (v) model.roadmap.completed[k] = true; }); ['core', 'class'].forEach(deck => Object.entries(remote.vocab?.[deck] || {}).forEach(([id, card]) => { model.vocab[deck][id] = mergeCard(model.vocab[deck][id], card); })); if (remote.phonics) { const localPhonics = normalizePhonics(model.phonics), remotePhonics = normalizePhonics(remote.phonics); model.phonics = { learned: [...new Set([...localPhonics.learned, ...remotePhonics.learned])], reviews: [...new Set([...localPhonics.reviews, ...remotePhonics.reviews])], quiz: { right: Math.max(localPhonics.quiz.right, remotePhonics.quiz.right), total: Math.max(localPhonics.quiz.total, remotePhonics.quiz.total) } }; } Object.entries(remote.activity || {}).forEach(([day, activity]) => { const local = activityFor(day); ['reviews', 'courses', 'studySeconds', 'videoSeconds', 'courseSeconds', 'newWords', 'reviewWords', 'forgotten', 'dictCorrect', 'dictWrong', 'newMastered'].forEach(key => local[key] = Math.max(local[key] || 0, activity[key] || 0)); Object.entries(activity.timeByPeriod || {}).forEach(([key, value]) => { local.timeByPeriod ||= {}; local.timeByPeriod[key] = Math.max(local.timeByPeriod[key] || 0, value || 0); }); }); if (!model.roadmap.startDate && remote.roadmap?.startDate) model.roadmap.startDate = remote.roadmap.startDate; save(); return true; }
+  function merge(remote) { if (!remote || remote.version !== 3) return false; Object.entries(remote.roadmap?.completed || {}).forEach(([k, v]) => { if (v) model.roadmap.completed[k] = true; }); ['core', 'class'].forEach(deck => Object.entries(remote.vocab?.[deck] || {}).forEach(([id, card]) => { model.vocab[deck][id] = mergeCard(model.vocab[deck][id], card); })); if (remote.phonics) { const localPhonics = normalizePhonics(model.phonics), remotePhonics = normalizePhonics(remote.phonics); model.phonics = { learned: [...new Set([...localPhonics.learned, ...remotePhonics.learned])], reviews: [...new Set([...localPhonics.reviews, ...remotePhonics.reviews])], quiz: { right: Math.max(localPhonics.quiz.right, remotePhonics.quiz.right), total: Math.max(localPhonics.quiz.total, remotePhonics.quiz.total) } }; } Object.entries(remote.activity || {}).forEach(([day, activity]) => { const local = activityFor(day); ['reviews', 'courses', 'studySeconds', 'videoSeconds', 'courseSeconds', 'newWords', 'reviewWords', 'forgotten', 'dictCorrect', 'dictWrong', 'newMastered'].forEach(key => local[key] = Math.max(local[key] || 0, activity[key] || 0)); Object.entries(activity.timeByPeriod || {}).forEach(([key, value]) => { local.timeByPeriod ||= {}; local.timeByPeriod[key] = Math.max(local.timeByPeriod[key] || 0, value || 0); }); }); if (!model.roadmap.startDate && remote.roadmap?.startDate) model.roadmap.startDate = remote.roadmap.startDate; demoteLegacyClassMastery(); save(); return true; }
   function hasCardProgress(card) {
     const c = normalizeCard(card);
     return !!(c.reps || c.lapses || c.interval || c.due || c.lastReviewed || c.familiar || c.mastered || c.familiarUpdatedAt || c.masteredUpdatedAt);
@@ -557,7 +581,7 @@
   }
   migrate();
   mirrorLegacyProgress();
-  global.IELTI = { KEY, get: () => model, save, merge, summary, wordId, migrateClassWords, getDeck, reviewCard, setRoadmap, setMastered, setFamiliar, setFamiliarList, replaceDeck, getPhonics, setPhonics, recordStudySeconds, recordCourseVideo, backfillCourseDurations, recordActivity, media: { resolve: resolveMediaUrl, nasBaseUrl: NAS_BASE_URL, nasHttpsBaseUrl: NAS_HTTPS_BASE_URL }, backup: { keys: [...BACKUP_KEYS], export: exportBackup, import: importBackup }, motion, speech: { speak: speakEnglish, pickVoice: pickEnglishVoice }, sync: { enabled: CLOUD_SYNC_ENABLED, url: SYNC_URL, run: autoSync, schedulePush: scheduleCloudPush } };
+  global.IELTI = { KEY, get: () => model, save, merge, summary, wordId, migrateClassWords, getDeck, isLongMastered, reviewCard, setRoadmap, setMastered, setFamiliar, setFamiliarList, replaceDeck, getPhonics, setPhonics, recordStudySeconds, recordCourseVideo, backfillCourseDurations, recordActivity, media: { resolve: resolveMediaUrl, nasBaseUrl: NAS_BASE_URL, nasHttpsBaseUrl: NAS_HTTPS_BASE_URL }, backup: { keys: [...BACKUP_KEYS], export: exportBackup, import: importBackup }, motion, speech: { speak: speakEnglish, pickVoice: pickEnglishVoice }, sync: { enabled: CLOUD_SYNC_ENABLED, url: SYNC_URL, run: autoSync, schedulePush: scheduleCloudPush } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', installChrome); else installChrome();
   global.addEventListener('ielti-progress', scheduleCloudPush);
   if (CLOUD_SYNC_ENABLED) {

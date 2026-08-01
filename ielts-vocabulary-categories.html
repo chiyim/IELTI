@@ -195,7 +195,7 @@ body.page-class .day-word-count{margin-left:auto;color:var(--apple-secondary);fo
   <div id="transBody"></div>
 </div>
 
-<script src="ielti-config.js?v=20260728-8"></script><script src="ielti-core.js?v=20260730-23"></script>
+<script src="ielti-config.js?v=20260728-8"></script><script src="ielti-core.js?v=20260801-5"></script>
 <script>
 // ---- 发音 (Web Speech API, 离线使用系统语音) ----
 let autoSpeak=true;
@@ -237,7 +237,7 @@ function filtered(){
 }
 function render(){
   const list=filtered();
-  const longMastered=window.IELTI?Object.values(IELTI.getDeck('class')).filter(card=>card.mastered).length:0;
+  const longMastered=window.IELTI?Object.values(IELTI.getDeck('class')).filter(IELTI.isLongMastered).length:0;
   document.getElementById('stat').textContent=`共 ${DATA.length} 词 · 已熟悉 ${known.size} · 长期掌握 ${longMastered}`;
   if(!list.length){main.innerHTML='<div class="empty">没有匹配的词条 🤔</div>';return;}
   // group by day then group
@@ -257,8 +257,9 @@ function render(){
       html+=`<div class="grp"><span class="grp-h">${g}<span class="grp-cnt">${arr.length}</span></span><div class="grid">`;
       arr.forEach(w=>{
         const progress=window.IELTI?IELTI.getDeck('class')[id(w)]||{}:{};
-        const k=progress.mastered?' known long-mastered':known.has(id(w))?' known':'';
-        const stateLabel=progress.mastered?'已掌握':known.has(id(w))?'已熟悉':'';
+        const isLongMastered=window.IELTI?.isLongMastered(progress);
+        const k=isLongMastered?' known long-mastered':known.has(id(w))?' known':'';
+        const stateLabel=isLongMastered?'长期掌握':known.has(id(w))?'已熟悉':'';
         html+=`<div class="w${k}" data-id="${encodeURIComponent(id(w))}">
           <span class="w-word"><span class="en">${w.en}</span><span class="ipa">${w.ipa||''}</span><span class="zh">${w.zh}</span></span><span class="pos">${w.pos||''}</span><span class="trl" data-en="${w.en.replace(/"/g,'&quot;')}">详</span>${stateLabel?`<span class="mastery-state">${stateLabel}</span>`:''}<span class="spk" data-en="${w.en.replace(/"/g,'&quot;')}">🔊</span></div>`;
       });
@@ -357,7 +358,7 @@ main.addEventListener('click',e=>{
   if(known.has(i))known.delete(i);else known.add(i);
   el.classList.toggle('known');
   persistKnown();
-  const longMastered=window.IELTI?Object.values(IELTI.getDeck('class')).filter(card=>card.mastered).length:0;
+  const longMastered=window.IELTI?Object.values(IELTI.getDeck('class')).filter(IELTI.isLongMastered).length:0;
   document.getElementById('stat').textContent=`共 ${DATA.length} 词 · 已熟悉 ${known.size} · 长期掌握 ${longMastered}`;
 });
 q.addEventListener('input',render);

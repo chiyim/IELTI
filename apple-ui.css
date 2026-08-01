@@ -222,10 +222,7 @@ body.page-today .hero{
   color:#fff!important;
   border:0!important;
   border-radius:2.15rem!important;
-  background:
-    radial-gradient(circle at 88% 12%,rgba(255,255,255,.19) 0 7.4rem,transparent 7.5rem),
-    radial-gradient(circle at 98% 96%,rgba(255,255,255,.09) 0 10rem,transparent 10.1rem),
-    #3685fe!important;
+  background:#3685fe!important;
   box-shadow:0 1.35rem 3.8rem rgba(27,101,230,.24)!important;
 }
 body.page-today .hero:before{
@@ -239,17 +236,21 @@ body.page-today .hero:before{
   pointer-events:none;
 }
 body.page-today .hero:after{
-  content:"";
-  position:absolute;
-  z-index:0;
-  right:9.2rem;
-  bottom:-3.2rem;
-  width:15rem;
-  height:15rem;
-  border-radius:999px;
-  background:rgba(255,255,255,.08);
-  pointer-events:none;
+  content:none;
 }
+body.page-today .hero-bubbles{position:absolute;z-index:1;inset:0;overflow:hidden;pointer-events:none}
+body.page-today .hero-bubble{position:absolute;display:block;border-radius:50%;background:rgba(255,255,255,.1);will-change:transform}
+body.page-today .hero-bubble-one{top:-5.4rem;right:6.4rem;width:13.5rem;height:13.5rem;background:rgba(255,255,255,.16)}
+body.page-today .hero-bubble-two{right:-3.4rem;bottom:-4.8rem;width:18.5rem;height:18.5rem;background:rgba(255,255,255,.09)}
+body.page-today .hero-bubble-three{top:45%;right:17.2rem;width:7.2rem;height:7.2rem;background:rgba(255,255,255,.13)}
+@media(prefers-reduced-motion:no-preference){
+  body.page-today .hero-bubble-one{animation:heroBubbleDriftOne 15s ease-in-out infinite}
+  body.page-today .hero-bubble-two{animation:heroBubbleDriftTwo 16.5s ease-in-out -5s infinite}
+  body.page-today .hero-bubble-three{animation:heroBubbleDriftThree 14s ease-in-out -3s infinite}
+}
+@keyframes heroBubbleDriftOne{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(-.8rem,.55rem,0)}}
+@keyframes heroBubbleDriftTwo{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(-.65rem,-.7rem,0)}}
+@keyframes heroBubbleDriftThree{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(.55rem,-.48rem,0)}}
 body.page-today .hero-copy{
   position:relative!important;
   z-index:3!important;
@@ -684,6 +685,12 @@ body.page-today .ring b{
   :root[data-display="eink"] body.page-today .hero{height:15.75rem!important;min-height:15.75rem!important;padding:1rem 1.45rem!important}
   body.page-today .hero-playground{min-height:0!important;height:13.75rem!important}
 }
+
+/* Keep the middle time aligned with the gauge and grow the labels outward. */
+body.page-today .active-period-legend{display:grid!important;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)!important;column-gap:.8rem!important;justify-content:normal!important}
+body.page-today .active-period-legend .legend-item:nth-child(1){justify-self:end}
+body.page-today .active-period-legend .legend-item:nth-child(2){justify-self:center}
+body.page-today .active-period-legend .legend-item:nth-child(3){justify-self:start}
 
 /* Review study surface: no decorative overlay may sit above the card controls. */
 body.page-review .study{
