@@ -134,6 +134,13 @@ body.page-class main .w .en{font-weight:500!important}
 body.page-class .fc-wrap .card .fen{font-weight:600!important}</style>
 <link rel="stylesheet" href="apple-ui.css?v=20260801-6">
   <link rel="stylesheet" href="eink-ui.css?v=20260728-14">
+<style>
+body.page-class main{padding-top:.625rem!important}
+body.page-class .day-title-row{position:sticky;top:.5rem;z-index:3;display:flex;align-items:center;gap:.65rem}
+body.page-class .day-h{position:static!important;display:flex!important;width:max-content!important;align-items:center}
+body.page-class .day-word-count{margin-left:auto;color:var(--apple-secondary);font-size:.78rem;font-weight:600;white-space:nowrap}
+@media(max-width:760px){body.page-class main{padding-top:.375rem!important}}
+</style>
 </head>
 <body class="apple-ui page-class"><header>
   <div class="htop">
@@ -231,7 +238,7 @@ function filtered(){
 function render(){
   const list=filtered();
   const longMastered=window.IELTI?Object.values(IELTI.getDeck('class')).filter(card=>card.mastered).length:0;
-  document.getElementById('stat').textContent=`共 ${DATA.length} 词 · 已熟悉 ${known.size} · 长期掌握 ${longMastered} · 当前 ${list.length}`;
+  document.getElementById('stat').textContent=`共 ${DATA.length} 词 · 已熟悉 ${known.size} · 长期掌握 ${longMastered}`;
   if(!list.length){main.innerHTML='<div class="empty">没有匹配的词条 🤔</div>';return;}
   // group by day then group
   const byDay={};
@@ -240,10 +247,11 @@ function render(){
   for(const day of days){
     if(!byDay[day])continue;
     const dayIndex=days.indexOf(day);
-    const showDaySteps=curDay!=='all'&&!groupFilter.value;
+    const showDaySteps=!groupFilter.value;
     const previous=showDaySteps&&dayIndex>0?`<button class="day-step" data-day="${days[dayIndex-1]}" aria-label="上一天" title="上一天">‹</button>`:'';
     const next=showDaySteps&&dayIndex<days.length-1?`<button class="day-step" data-day="${days[dayIndex+1]}" aria-label="下一天" title="下一天">›</button>`:'';
-    html+=`<div class="daysec"><div class="day-h">${previous}<span>${day}</span>${next}</div>`;
+    const dayWordCount=Object.values(byDay[day]).reduce((total, words)=>total+words.length,0);
+    html+=`<div class="daysec"><div class="day-title-row"><div class="day-h">${previous}<span>${day}</span>${next}</div><span class="day-word-count">${dayWordCount} 个单词</span></div>`;
     for(const g in byDay[day]){
       const arr=byDay[day][g];
       html+=`<div class="grp"><span class="grp-h">${g}<span class="grp-cnt">${arr.length}</span></span><div class="grid">`;
@@ -350,7 +358,7 @@ main.addEventListener('click',e=>{
   el.classList.toggle('known');
   persistKnown();
   const longMastered=window.IELTI?Object.values(IELTI.getDeck('class')).filter(card=>card.mastered).length:0;
-  document.getElementById('stat').textContent=`共 ${DATA.length} 词 · 已熟悉 ${known.size} · 长期掌握 ${longMastered} · 当前 ${filtered().length}`;
+  document.getElementById('stat').textContent=`共 ${DATA.length} 词 · 已熟悉 ${known.size} · 长期掌握 ${longMastered}`;
 });
 q.addEventListener('input',render);
 groupFilter.addEventListener('change',()=>{if(groupFilter.value){curDay='all';localStorage.setItem(LS_DAY,'all');[...daysEl.children].forEach((chip,index)=>chip.classList.toggle('active',index===0));}render();});

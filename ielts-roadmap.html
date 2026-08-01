@@ -118,7 +118,7 @@ input[type=checkbox]{accent-color:#5B6CF5}
 .postpone-btn { font-size: 12.5px; color: #585885; text-decoration: underline; cursor: pointer; float: right; margin-right: 16px; transition: color .15s; }
 .postpone-btn:hover { color: #5B6CF5; }
 </style>
-<link rel="stylesheet" href="apple-ui.css?v=20260730-35">
+<link rel="stylesheet" href="apple-ui.css?v=20260730-36">
   <link rel="stylesheet" href="eink-ui.css?v=20260728-5">
 </head>
 <body class="apple-ui page-roadmap"><div class="wrap">
@@ -328,6 +328,15 @@ function styleTab(el, key) {
   el.classList.toggle("active", active);
 }
 
+function positionPhaseIndicator() {
+  const box = document.getElementById("phaseTabs");
+  const active = box.querySelector(".phase-tab.active");
+  if (!active) return;
+  box.style.setProperty("--phase-indicator-left", active.offsetLeft + "px");
+  box.style.setProperty("--phase-indicator-width", active.offsetWidth + "px");
+}
+window.addEventListener("resize", () => requestAnimationFrame(positionPhaseIndicator));
+
 function renderPhaseTabs() {
   const box = document.getElementById("phaseTabs");
   box.dataset.phase = currentFilter;
@@ -355,12 +364,14 @@ function renderPhaseTabs() {
     styleTab(b, p.key);
     box.appendChild(b);
   });
+  requestAnimationFrame(positionPhaseIndicator);
 }
 
 function setPhaseFilter(key) {
   currentFilter = key;
   document.getElementById("phaseTabs").dataset.phase = key;
   document.querySelectorAll(".phase-tab").forEach(el => styleTab(el, el.dataset.key));
+  requestAnimationFrame(positionPhaseIndicator);
   renderWeeks();
 }
 

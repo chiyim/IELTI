@@ -669,6 +669,11 @@ body.page-today .ring b{
 }
 @media(max-width:760px) and (prefers-reduced-motion:reduce){body.apple-ui.apple-nav-hidden .apple-tabbar{transform:none!important;opacity:0!important}}
 
+@media(min-width:701px){
+  body.page-roadmap .phase-tabs{grid-template-columns:.62fr 1fr 1.22fr 1.27fr 1.2fr!important}
+  body.page-roadmap .phase-tabs:before{left:var(--phase-indicator-left,.3rem)!important;width:var(--phase-indicator-width,calc((100% - 1.6rem)/5))!important;transform:none!important;transition:left .38s cubic-bezier(.2,.8,.2,1),width .38s cubic-bezier(.2,.8,.2,1),background-color .22s ease!important}
+}
+
 /* Review study surface: no decorative overlay may sit above the card controls. */
 body.page-review .study{
   background:
