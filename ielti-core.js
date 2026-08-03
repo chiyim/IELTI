@@ -530,7 +530,6 @@
         if (!mobile.matches) { stopIdleTimer(); setState('full'); lastY = window.scrollY; return; }
         const y = Math.max(0, window.scrollY), delta = y - lastY;
         lastY = y;
-        if (reviewPage && !studyPage) { setState('full'); return; }
         if (studyPage) {
           if (y <= 4 && delta < 0) {
             stopIdleTimer();
