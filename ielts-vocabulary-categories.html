@@ -212,14 +212,14 @@ const id = w => window.IELTI?IELTI.wordId(w):[w.day,w.group,w.en].map(value=>Str
 function saveKnownLocal(){localStorage.setItem(LS_FAMILIAR,JSON.stringify([...known]));if(window.IELTI)IELTI.setFamiliarList('class',[...known]);}
 function persistKnown(){saveKnownLocal();}
 const LS_DAY='wclass_day_v1';
-let curDay=localStorage.getItem(LS_DAY)||'all', onlyUnknown=false;
+let onlyUnknown=false;
 
 // build day list
 const days=[]; DATA.forEach(w=>{if(!days.includes(w.day))days.push(w.day)});
+let curDay=localStorage.getItem(LS_DAY)||days[0];if(curDay==='all'||!days.includes(curDay))curDay=days[0];
 const daysEl=document.getElementById('days');
 function selectDay(val){groupFilter.value='';curDay=val;localStorage.setItem(LS_DAY,val);render();[...daysEl.children].forEach(c=>c.classList.toggle('active',c.dataset.day===val));window.scrollTo(0,0)}
 function dayChip(label,val){const b=document.createElement('div');b.className='day-chip'+(val==curDay?' active':'');b.dataset.day=val;b.textContent=label;b.onclick=()=>selectDay(val);return b;}
-daysEl.appendChild(dayChip('全部',  'all'));
 days.forEach(d=>daysEl.appendChild(dayChip(d,d)));
 
 const main=document.getElementById('main');
@@ -230,7 +230,7 @@ function filtered(){
   const kw=q.value.trim().toLowerCase();
   const group=groupFilter.value;
   return DATA.filter(w=>{
-    if(!group && curDay!=='all' && w.day!==curDay) return false;
+    if(!group && w.day!==curDay) return false;
     if(group && w.group!==group) return false;
     if(onlyUnknown && known.has(id(w))) return false;
     if(kw){return (w.en.toLowerCase().includes(kw)||w.zh.toLowerCase().includes(kw)||w.group.toLowerCase().includes(kw));}
@@ -364,7 +364,7 @@ main.addEventListener('click',e=>{
   document.getElementById('stat').textContent=`共 ${DATA.length} 词 · 已熟悉 ${known.size} · 长期掌握 ${longMastered}`;
 });
 q.addEventListener('input',render);
-groupFilter.addEventListener('change',()=>{if(groupFilter.value){curDay='all';localStorage.setItem(LS_DAY,'all');[...daysEl.children].forEach((chip,index)=>chip.classList.toggle('active',index===0));}render();});
+groupFilter.addEventListener('change',()=>{if(groupFilter.value){[...daysEl.children].forEach(chip=>chip.classList.remove('active'));}render();});
 
 function tgl(btnId,cls,after){const b=document.getElementById(btnId);b.onclick=()=>{const on=document.body.classList.toggle(cls);b.classList.toggle('on',on);if(after)after(on);};}
 tgl('zhBtn','hide-zh',()=>document.querySelectorAll('.reveal').forEach(s=>s.classList.remove('reveal')));
@@ -401,7 +401,7 @@ document.getElementById('themeBtn').onclick=()=>{theme=DISPLAY_MODES[(DISPLAY_MO
 // flashcards
 let deck=[],fi=0,flipped=false,fcMode='en2zh';
 const fc=document.getElementById('fc'),card=document.getElementById('card');
-function openFC(){deck=filtered().slice();if(!deck.length){alert('当前没有可练习的词');return;}fi=0;flipped=false;fc.classList.add('show');document.getElementById('fcTitle').textContent=(curDay==='all'?'全部':curDay)+(onlyUnknown?' · 未熟悉':'');drawCard();}
+function openFC(){deck=filtered().slice();if(!deck.length){alert('当前没有可练习的词');return;}fi=0;flipped=false;fc.classList.add('show');document.getElementById('fcTitle').textContent=curDay+(onlyUnknown?' · 未熟悉':'');drawCard();}
 function drawCard(){
   const w=deck[fi];flipped=false;
   document.getElementById('fcCounter').textContent=`${fi+1} / ${deck.length}`;
