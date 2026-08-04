@@ -3,12 +3,31 @@
   const THEME_KEY = 'ielti_theme_v1';
   const DISPLAY_KEY = 'ielti_display_mode_v1';
   const displayModes = ['light', 'dark', 'eink'];
+  const preferenceModes = ['auto', 'light', 'dark', 'eink'];
+  const THEME_ICON = {
+    auto:   '<circle cx="12" cy="12" r="8"/><path d="M12 4v16A8 8 0 0 0 12 4z" fill="currentColor" stroke="none"/>',
+    light:  '<circle cx="12" cy="12" r="4"/><line x1="12" y1="3" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21"/><line x1="3" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21" y2="12"/><line x1="5.64" y1="5.64" x2="7.05" y2="7.05"/><line x1="16.95" y1="16.95" x2="18.36" y2="18.36"/><line x1="5.64" y1="18.36" x2="7.05" y2="16.95"/><line x1="16.95" y1="7.05" x2="18.36" y2="5.64"/>',
+    dark:   '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
+    eink:   '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h4"/>',
+  };
+  const themeIconSvg = key => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block;margin:0 auto">${THEME_ICON[key]}</svg>`;
+  const timeBasedDisplay = () => { const hour = new Date().getHours(); return (hour >= 19 || hour < 7) ? 'dark' : 'light'; };
   const probablyEink = () => {
     const ua = navigator.userAgent || '';
     return !!global.matchMedia?.('(monochrome)').matches || /(onyx|boox|hisense|moaan|inkpalm|meebook|bigme|reinkstone|dasung|paperwhite|kindle)/i.test(ua);
   };
   const normalizeDisplayMode = mode => displayModes.includes(mode) ? mode : 'light';
-  const savedDisplay = localStorage.getItem(DISPLAY_KEY) || (localStorage.getItem(THEME_KEY) === 'eink' ? 'eink' : null) || (probablyEink() ? 'eink' : null) || localStorage.getItem(THEME_KEY);
+  const savedDisplay = (() => {
+    const pref = localStorage.getItem(DISPLAY_KEY);
+    if (pref === 'light' || pref === 'dark' || pref === 'eink') return pref;
+    if (probablyEink()) return 'eink';
+    // legacy migration: only use THEME_KEY when DISPLAY_KEY is completely unset
+    if (!pref) {
+      const legacy = localStorage.getItem(THEME_KEY);
+      if (legacy === 'dark' || legacy === 'light' || legacy === 'eink') return legacy;
+    }
+    return timeBasedDisplay();
+  })();
   function applyDisplayMode(mode, persist = true) {
     const current = normalizeDisplayMode(mode);
     document.documentElement.dataset.display = current;
@@ -433,9 +452,38 @@
     syncPageTheme();
     if (!document.querySelector('.apple-theme-toggle') && !document.getElementById('themeBtn')) {
       const toggle = document.createElement('button'); toggle.className = 'apple-theme-toggle'; toggle.type = 'button'; toggle.setAttribute('aria-label', '切换显示模式');
-      const paint = () => { const mode = document.documentElement.dataset.display || document.documentElement.dataset.theme || 'light'; toggle.textContent = mode === 'eink' ? '墨' : mode === 'dark' ? '☀︎' : '◐'; toggle.title = `当前：${mode === 'eink' ? '墨水屏' : mode === 'dark' ? '深色' : '浅色'} · 点击切换显示模式`; toggle.setAttribute('aria-label', toggle.title); };
+      const paint = () => {
+        const pref = localStorage.getItem(DISPLAY_KEY) || 'auto';
+        const mode = document.documentElement.dataset.display || document.documentElement.dataset.theme || 'light';
+        if (mode === 'eink') {
+          toggle.textContent = '墨';
+        } else {
+          const iconKey = pref === 'auto' ? 'auto' : mode;
+          toggle.innerHTML = themeIconSvg(iconKey);
+        }
+        if (pref === 'auto') {
+          toggle.title = `自动 · ${mode === 'dark' ? '深色' : mode === 'eink' ? '墨水屏' : '浅色'} · 点击切换`;
+        } else {
+          toggle.title = `当前：${mode === 'eink' ? '墨水屏' : mode === 'dark' ? '深色' : '浅色'} · 点击切换显示模式`;
+        }
+        toggle.setAttribute('aria-label', toggle.title);
+      };
       paint();
-      toggle.onclick = () => { const current = document.documentElement.dataset.display || document.documentElement.dataset.theme || 'light'; const next = displayModes[(displayModes.indexOf(current) + 1) % displayModes.length] || 'light'; applyDisplayMode(next); syncPageTheme(); paint(); };
+      toggle.onclick = () => {
+        const currentPref = localStorage.getItem(DISPLAY_KEY) || 'auto';
+        const idx = preferenceModes.indexOf(currentPref);
+        const nextPref = preferenceModes[(idx + 1) % preferenceModes.length];
+        if (nextPref === 'auto') {
+          localStorage.setItem(DISPLAY_KEY, 'auto');
+          localStorage.removeItem(THEME_KEY);
+          const resolved = probablyEink() ? 'eink' : timeBasedDisplay();
+          applyDisplayMode(resolved, false);
+        } else {
+          applyDisplayMode(nextPref, true);
+        }
+        syncPageTheme();
+        paint();
+      };
       document.body.appendChild(toggle);
     }
     let avatarControl = null;
@@ -572,7 +620,7 @@
     const titleRow = title => { if (!title) return null; let row = title.parentElement?.classList.contains('apple-mobile-title-row') ? title.parentElement : null; if (!row) { const host = title.parentElement; host?.classList.add('apple-mobile-title-host'); row = document.createElement('div'); row.className = 'apple-mobile-title-row'; title.before(row); row.append(title); } return row; };
     const pageTitle = () => pageClass === 'page-review' ? document.querySelector('.brand h1') : pageClass === 'page-class' ? document.querySelector('.page-title-brand h1') : document.querySelector('.top h1,.hero h1,.phonics-head h1');
     const placeAvatarControl = () => { if (!avatarControl) return; titleRow(pageTitle())?.append(avatarControl); };
-    const placeThemeControl = () => { if (!themeControl) return; themeControl.style.removeProperty('top'); const desktop = matchMedia('(min-width:761px)').matches; if (desktop) { document.querySelector('.apple-tabbar')?.append(themeControl); } else if (pageClass === 'page-review') { titleRow(document.querySelector('.brand h1'))?.append(themeControl); } else if (pageClass === 'page-class') { titleRow(document.querySelector('.page-title-brand h1'))?.append(themeControl); } else titleRow(document.querySelector('.top h1,.hero h1,.phonics-head h1'))?.append(themeControl); };
+    const placeThemeControl = () => { if (!themeControl) return; themeControl.style.removeProperty('top'); themeControl.style.removeProperty('transform'); themeControl.style.removeProperty('margin'); themeControl.style.removeProperty('position'); const desktop = matchMedia('(min-width:761px)').matches; if (desktop) { document.querySelector('.apple-tabbar')?.append(themeControl); themeControl.style.setProperty('margin-bottom', '-4px', 'important'); } else if (pageClass === 'page-review') { titleRow(document.querySelector('.brand h1'))?.append(themeControl); } else if (pageClass === 'page-class') { titleRow(document.querySelector('.page-title-brand h1'))?.append(themeControl); } else titleRow(document.querySelector('.top h1,.hero h1,.phonics-head h1'))?.append(themeControl); };
     placeThemeControl(); placeAvatarControl(); matchMedia('(min-width:761px)').addEventListener('change', () => { placeThemeControl(); placeAvatarControl(); });
     if (!document.querySelector('[data-ielti-sync]') && !document.getElementById('syncState')) { const status = document.createElement('div'); status.dataset.ieltiSync = ''; status.className = 'ielti-sync-state'; status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite'); document.body.appendChild(status); }
     syncStatus(CLOUD_SYNC_ENABLED ? '准备自动同步…' : '本地模式 · 进度仅保存在此浏览器');

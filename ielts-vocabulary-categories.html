@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.png" type="image/png"><link rel="apple-touch-icon" href="icon.png">
 <title>雅思词汇 · 分类记忆法</title>
-<script>document.documentElement.classList.add('ielti-booting');try{var m=localStorage.getItem('ielti_display_mode_v1');if(['light','dark','eink'].indexOf(m)<0)m='light';document.documentElement.dataset.display=m;document.documentElement.dataset.theme=m==='dark'?'dark':'light';document.documentElement.classList.toggle('light',m==='light');document.documentElement.classList.toggle('eink-mode',m==='eink');}catch(e){}setTimeout(()=>document.documentElement.classList.remove('ielti-booting'),1200);</script>
+<script>document.documentElement.classList.add('ielti-booting');try{var m=localStorage.getItem('ielti_display_mode_v1');if(['light','dark','eink'].indexOf(m)<0)m=(new Date().getHours()>=19||new Date().getHours()<7?'dark':'light');document.documentElement.dataset.display=m;document.documentElement.dataset.theme=m==='dark'?'dark':'light';document.documentElement.classList.toggle('light',m==='light');document.documentElement.classList.toggle('eink-mode',m==='eink');}catch(e){}setTimeout(()=>document.documentElement.classList.remove('ielti-booting'),1200);</script>
 <style>
 :root{
   --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
@@ -132,7 +132,7 @@ body.page-class .w.long-mastered .en,body.page-class .w.long-mastered .zh{color:
 body.page-class .w .zh{font-weight:400!important}body.page-class .fc-wrap .card .fzh{font-weight:400!important}
 body.page-class main .w .en{font-weight:500!important}
 body.page-class .fc-wrap .card .fen{font-weight:600!important}</style>
-<link rel="stylesheet" href="apple-ui.css?v=20260801-6">
+<link rel="stylesheet" href="apple-ui.css?v=20260805-31">
   <link rel="stylesheet" href="eink-ui.css?v=20260728-14">
 <style>
 body.page-class main{padding-top:.625rem!important}
@@ -195,7 +195,7 @@ body.page-class .day-word-count{margin-left:auto;color:var(--apple-secondary);fo
   <div id="transBody"></div>
 </div>
 
-<script src="ielti-config.js?v=20260728-8"></script><script src="ielti-core.js?v=20260801-5"></script>
+<script src="ielti-config.js?v=20260728-8"></script><script src="ielti-core.js?v=20260805-35"></script>
 
 <script src="ielts-word-data.js"></script>
 <script>
@@ -377,7 +377,16 @@ document.getElementById('autoSpkBtn').onclick=function(){autoSpeak=!autoSpeak;th
 // display mode
 const DISPLAY_KEY='ielti_display_mode_v1';
 const DISPLAY_MODES=['light','dark','eink'];
+const PREF_MODES=['auto','light','dark','eink'];
+const timeBasedDisplay=()=>{const h=new Date().getHours();return(h>=19||h<7)?'dark':'light';};
+const THEME_ICON={auto:'<circle cx="12" cy="12" r="8"/><path d="M12 4v16A8 8 0 0 0 12 4z" fill="currentColor" stroke="none"/>',light:'<circle cx="12" cy="12" r="4"/><line x1="12" y1="3" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21"/><line x1="3" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21" y2="12"/><line x1="5.64" y1="5.64" x2="7.05" y2="7.05"/><line x1="16.95" y1="16.95" x2="18.36" y2="18.36"/><line x1="5.64" y1="18.36" x2="7.05" y2="16.95"/><line x1="16.95" y1="7.05" x2="18.36" y2="5.64"/>',dark:'<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',eink:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h4"/>'};
+const themeIconSvg=key=>`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block;margin:0 auto">${THEME_ICON[key]}</svg>`;
 function normalizeDisplayMode(t){return DISPLAY_MODES.includes(t)?t:'light';}
+function resolveTheme(){
+  const pref=localStorage.getItem(DISPLAY_KEY);
+  if(pref==='light'||pref==='dark'||pref==='eink')return pref;
+  return timeBasedDisplay();
+}
 function applyTheme(t){
   theme=normalizeDisplayMode(t);
   document.documentElement.dataset.display=theme;
@@ -385,18 +394,43 @@ function applyTheme(t){
   document.documentElement.classList.toggle('eink-mode',theme==='eink');
   document.body.classList.toggle('light',theme!=='dark');
   const button=document.getElementById('themeBtn');
-  button.textContent=theme==='eink'?'墨':theme==='light'?'◐':'☀︎';
-  button.setAttribute('aria-label',`当前：${theme==='eink'?'墨水屏':theme==='light'?'浅色':'深色'} · 点击切换显示模式`);
+  const pref=localStorage.getItem(DISPLAY_KEY)||'auto';
+  if(theme==='eink'){
+    button.textContent='墨';
+  }else{
+    const iconKey=pref==='auto'?'auto':theme;
+    button.innerHTML=themeIconSvg(iconKey);
+  }
+  if(pref==='auto'){
+    button.setAttribute('aria-label',`自动 · ${theme==='dark'?'深色':theme==='eink'?'墨水屏':'浅色'} · 点击切换`);
+  }else{
+    button.setAttribute('aria-label',`当前：${theme==='eink'?'墨水屏':theme==='light'?'浅色':'深色'} · 点击切换显示模式`);
+  }
   button.title=button.getAttribute('aria-label');
 }
-let theme=localStorage.getItem(DISPLAY_KEY)||'light';applyTheme(theme);
+let theme=resolveTheme();applyTheme(theme);
 // 顶部菜单收起/展开
 const LS_COLLAPSE='wclass_collapse_v1';
 const headerEl=document.querySelector('header');
 function applyCollapse(c){headerEl.classList.toggle('collapsed',c);document.getElementById('collapseBtn').textContent=c?'▸':'▾';}
 applyCollapse(localStorage.getItem(LS_COLLAPSE)!=='0');
 document.getElementById('collapseBtn').onclick=()=>{const c=!headerEl.classList.contains('collapsed');applyCollapse(c);localStorage.setItem(LS_COLLAPSE,c?'1':'0');};
-document.getElementById('themeBtn').onclick=()=>{theme=DISPLAY_MODES[(DISPLAY_MODES.indexOf(theme)+1)%DISPLAY_MODES.length]||'light';localStorage.setItem(DISPLAY_KEY,theme);localStorage.setItem(LS_THEME,theme);localStorage.setItem('ielti_theme_v1',theme==='eink'?'light':theme);applyTheme(theme);};
+document.getElementById('themeBtn').onclick=()=>{
+  const currentPref=localStorage.getItem(DISPLAY_KEY)||'auto';
+  const idx=PREF_MODES.indexOf(currentPref);
+  const nextPref=PREF_MODES[(idx+1)%PREF_MODES.length];
+  if(nextPref==='auto'){
+    localStorage.setItem(DISPLAY_KEY,'auto');
+    localStorage.removeItem('ielti_theme_v1');
+    theme=timeBasedDisplay();
+  }else{
+    localStorage.setItem(DISPLAY_KEY,nextPref);
+    localStorage.setItem('ielti_theme_v1',nextPref==='eink'?'light':nextPref);
+    theme=nextPref;
+  }
+  localStorage.setItem(LS_THEME,theme);
+  applyTheme(theme);
+};
 
 // flashcards
 let deck=[],fi=0,flipped=false,fcMode='en2zh';

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.png" type="image/png"><link rel="apple-touch-icon" href="icon.png">
   <title>IELTI · 121 个字母组合</title>
-  <script>document.documentElement.classList.add('ielti-booting');try{var m=localStorage.getItem('ielti_display_mode_v1')||localStorage.getItem('ielti_theme_v1');if(['light','dark','eink'].indexOf(m)>-1){document.documentElement.dataset.display=m;document.documentElement.dataset.theme=m==='dark'?'dark':'light';document.documentElement.classList.toggle('eink-mode',m==='eink');}}catch(e){}setTimeout(()=>document.documentElement.classList.remove('ielti-booting'),1200);</script>
+  <script>document.documentElement.classList.add('ielti-booting');try{var m=localStorage.getItem('ielti_display_mode_v1')||localStorage.getItem('ielti_theme_v1')||(new Date().getHours()>=19||new Date().getHours()<7?'dark':'light');if(['light','dark','eink'].indexOf(m)>-1){document.documentElement.dataset.display=m;document.documentElement.dataset.theme=m==='dark'?'dark':'light';document.documentElement.classList.toggle('eink-mode',m==='eink');}}catch(e){}setTimeout(()=>document.documentElement.classList.remove('ielti-booting'),1200);</script>
   <style>
     :root{--accent:#0a84ff;--violet:#6659e8;--warm:#ff9f0a;--success:#30a46c}
     *{box-sizing:border-box}body{margin:0}.phonics-app{max-width:1080px;margin:auto;padding:1.75rem 1.25rem 7rem}
@@ -25,7 +25,7 @@
     @media(prefers-reduced-transparency:reduce){.phonics-card,.study-card,.quiz-box,.mode-bar,.hero,.hero-stat{background:var(--apple-solid);backdrop-filter:none}}
     @media(prefers-contrast:more){.phonics-card,.study-card,.quiz-box,.mode-bar,.hero,.hero-stat,.chip,.review-action,.quiz-choice{border-color:currentColor}}
   </style>
-<link rel="stylesheet" href="apple-ui.css?v=20260731-1">
+<link rel="stylesheet" href="apple-ui.css?v=20260805-31">
   <link rel="stylesheet" href="eink-ui.css?v=20260728-5">
 </head>
 <body class="apple-ui page-phonics">
@@ -39,7 +39,7 @@
     <section class="panel" id="reviewPanel"><div class="study-shell" id="reviewShell"></div></section>
     <section class="panel" id="quizPanel"><div class="quiz-box" id="quizBox"></div></section>
   </main>
-<script src="ielti-config.js?v=20260728-5"></script><script src="ielti-core.js?v=20260801-5"></script>
+<script src="ielti-config.js?v=20260728-5"></script><script src="ielti-core.js?v=20260805-35"></script>
   <script>
   const rawGroups=[
     ['元音','/iː/','长衣音','e|he|他;ee|see|看见;ea|eat|吃;ie|field|田野'],
