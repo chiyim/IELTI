@@ -68,12 +68,31 @@ setTimeout(() => document.documentElement.classList.remove('ielti-booting'), 120
   </footer>
 </main>
 
-<script src="ielti-config.js?v=20260805-1"></script>
+<script src="ielti-config.js?v=20260805-2"></script>
 <script src="ielts-ebook-library-data.js?v=20260805-7"></script>
 <script src="ielti-core.js?v=20260805-38"></script>
 <script>
 (function () {
   const BOOKS = window.IELTI_LIBRARY || [];
+  // Cover thumbnails live on the NAS HTTP server (thumbs/<id>.jpg).
+  const thumbBase = (window.IELTI_CONFIG && window.IELTI_CONFIG.libraryThumbDir) || 'thumbs';
+  // Fallback chain: NAS thumb → local thumbs/ folder → initial-letter placeholder.
+  window.IELTI_thumbError = function (img) {
+    if (img.dataset.triedLocal) {
+      img.remove();
+      const box = img.parentNode;
+      const old = box.querySelector('.library-thumb-fallback');
+      if (old) old.remove();
+      const f = document.createElement('div');
+      f.className = 'library-thumb-fallback';
+      try { f.textContent = decodeURIComponent(img.dataset.fallback || '📖'); }
+      catch (e) { f.textContent = '📖'; }
+      box.appendChild(f);
+      return;
+    }
+    img.dataset.triedLocal = '1';
+    img.src = 'thumbs/' + img.dataset.thumbId + '.jpg';
+  };
   const CATEGORIES = {
     'dictionary':    '字典 · 视觉词汇',
     'vocab-grammar': '语法 · 词汇',
@@ -227,13 +246,15 @@ setTimeout(() => document.documentElement.classList.remove('ielti-booting'), 120
       const readerHref = isEpub
         ? buildOpenUrl(b)
         : 'ielts-ebook-reader.html?id=' + encodeURIComponent(b.id);
-      const fallback = escapeHtml(initial(title));
+      const fallbackUri = encodeURIComponent(initial(title));
       return `<a class="library-card" href="${readerHref}" data-id="${escapeHtml(b.id)}"${isEpub ? ' target="_blank" rel="noopener"' : ''}>
         <div class="library-thumb">
           <img loading="lazy" decoding="async"
-               src="thumbs/${escapeHtml(b.id)}.jpg"
+               src="${thumbBase}/${escapeHtml(b.id)}.jpg"
+               data-thumb-id="${escapeHtml(b.id)}"
+               data-fallback="${fallbackUri}"
                alt="${escapeHtml(title)}"
-               onerror="this.remove();this.parentNode.querySelector('.library-thumb-fallback')?.remove();var f=document.createElement('div');f.className='library-thumb-fallback';f.textContent=${"'"} + fallback + "${"'"};this.parentNode.appendChild(f);">
+               onerror="window.IELTI_thumbError&&window.IELTI_thumbError(this)">
           <span class="library-thumb-ext ${isEpub ? 'library-thumb-epub' : ''}">${isEpub ? 'EPUB' : 'PDF'}</span>
         </div>
         <div class="library-body">
