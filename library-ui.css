@@ -1,0 +1,410 @@
+/* IELTI 英文电子书图书馆 — library-specific styles
+   Re-uses apple-ui.css tokens (--apple-*) for theme parity.
+   No new colour tokens introduced. */
+
+.library-hero {
+  position: relative;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--apple-line);
+  border-radius: 2rem;
+  background: linear-gradient(145deg,
+    color-mix(in srgb, var(--apple-blue) 7%, var(--apple-surface)),
+    var(--apple-surface) 56%,
+    color-mix(in srgb, var(--apple-green) 4%, var(--apple-surface))
+  );
+  box-shadow: var(--apple-shadow);
+  overflow: hidden;
+}
+.library-hero h2 {
+  margin: 0 0 .45rem;
+  font-size: clamp(1.65rem, 4.2vw, 2.45rem);
+  line-height: 1.05;
+  letter-spacing: -.04em;
+  font-weight: 780;
+}
+.library-hero p { margin: 0; color: var(--apple-secondary); font-size: .92rem; }
+.library-hero-actions {
+  display: flex; flex-wrap: wrap; gap: .65rem;
+  margin-top: 1rem;
+}
+.library-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .75rem;
+  margin-bottom: 1rem;
+}
+.library-stat {
+  padding: .85rem 1rem;
+  border: 1px solid var(--apple-line);
+  border-radius: 1.15rem;
+  background: color-mix(in srgb, var(--apple-solid) 82%, transparent);
+}
+.library-stat span {
+  display: block;
+  color: var(--apple-secondary);
+  font-size: .72rem;
+  font-weight: 720;
+}
+.library-stat b {
+  display: block;
+  margin-top: .15rem;
+  font-size: 1.35rem;
+  line-height: 1.1;
+  font-weight: 780;
+}
+
+/* Toolbar */
+.library-toolbar {
+  display: grid;
+  gap: .85rem;
+  padding: 1rem 1.1rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--apple-line);
+  border-radius: 1.55rem;
+  background: var(--apple-surface);
+  box-shadow: 0 12px 34px rgba(0,0,0,.055);
+  backdrop-filter: blur(22px) saturate(170%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+}
+.library-toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .6rem;
+}
+.library-search {
+  flex: 1 1 14rem;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .55rem .85rem;
+  border: 1px solid var(--apple-line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--apple-solid) 88%, transparent);
+}
+.library-search input {
+  flex: 1; min-width: 0;
+  appearance: none; border: 0; background: transparent; outline: none;
+  font: inherit; font-size: .92rem;
+  color: var(--apple-ink);
+}
+.library-search input::placeholder { color: var(--apple-secondary); }
+.library-search-icon {
+  width: 1rem; height: 1rem; flex: 0 0 auto;
+  color: var(--apple-secondary);
+}
+.library-sort {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .35rem .5rem;
+  border: 1px solid var(--apple-line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--apple-solid) 88%, transparent);
+  font-size: .85rem;
+}
+.library-sort select {
+  appearance: none; border: 0; background: transparent; outline: none;
+  font: inherit; font-size: .85rem; color: var(--apple-ink);
+  padding: .15rem .25rem;
+}
+.library-chip-row {
+  display: flex; flex-wrap: wrap; gap: .4rem;
+}
+.library-chip {
+  display: inline-flex;
+  align-items: center; gap: .35rem;
+  padding: .35rem .78rem;
+  border: 1px solid var(--apple-line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--apple-solid) 88%, transparent);
+  color: var(--apple-secondary);
+  font-size: .78rem; font-weight: 720;
+  cursor: pointer;
+  transition: color .2s ease, background .2s ease, border-color .2s ease;
+}
+.library-chip:hover { color: var(--apple-ink); }
+.library-chip.active {
+  background: var(--apple-blue);
+  color: #fff;
+  border-color: var(--apple-blue);
+}
+.library-chip .chip-count {
+  padding-left: .25rem; opacity: .65;
+}
+.library-result-bar {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+  margin: .35rem .15rem .65rem;
+  color: var(--apple-secondary);
+  font-size: .85rem;
+}
+.library-clear {
+  appearance: none; border: 0; background: transparent;
+  color: var(--apple-blue); font: inherit; font-weight: 720;
+  cursor: pointer; padding: 0;
+}
+
+/* Grid — 6 books per row on desktop */
+.library-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 1rem;
+}
+@media (max-width: 1100px) {
+  .library-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.library-card {
+  display: flex; flex-direction: column;
+  border: 1px solid var(--apple-line);
+  border-radius: 1.35rem;
+  background: var(--apple-surface);
+  box-shadow: 0 12px 34px rgba(0,0,0,.055);
+  backdrop-filter: blur(22px) saturate(170%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  overflow: hidden;
+  color: var(--apple-ink);
+  text-decoration: none;
+  transition: transform .35s cubic-bezier(.16,1,.3,1), box-shadow .35s ease;
+  position: relative;
+}
+.library-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 46px rgba(0,0,0,.085), 0 0 0 2px color-mix(in srgb, var(--apple-blue) 18%, transparent);
+}
+.library-thumb {
+  aspect-ratio: 3 / 4;
+  width: 100%;
+  background: linear-gradient(155deg, color-mix(in srgb, var(--apple-blue) 8%, var(--apple-solid)), var(--apple-solid));
+  position: relative;
+  overflow: hidden;
+}
+.library-thumb img {
+  display: block;
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center top;
+}
+.library-thumb-fallback {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  color: var(--apple-secondary);
+  font-size: 2.2rem; font-weight: 800;
+  letter-spacing: -.04em;
+}
+.library-thumb-ext {
+  position: absolute; top: .55rem; right: .55rem;
+  padding: .18rem .45rem;
+  border-radius: 999px;
+  background: rgba(0,0,0,.45);
+  color: #fff;
+  font-size: .68rem; font-weight: 800; letter-spacing: .04em;
+}
+.library-thumb-epub { background: rgba(110,80,180,.78); }
+
+.library-body {
+  padding: .8rem .9rem 1rem;
+  display: flex; flex-direction: column;
+  gap: .35rem;
+  flex: 1;
+  min-width: 0;
+}
+.library-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: .8rem;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -.01em;
+}
+.library-author {
+  color: var(--apple-secondary);
+  font-size: .76rem;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.library-meta {
+  display: flex; flex-wrap: wrap; gap: .35rem;
+  margin-top: auto; padding-top: .5rem;
+}
+.library-pill {
+  padding: .15rem .5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--apple-secondary) 12%, transparent);
+  font-size: .68rem; font-weight: 720;
+  color: var(--apple-ink);
+}
+.library-pill.cat {
+  background: color-mix(in srgb, var(--apple-blue) 13%, transparent);
+  color: var(--apple-blue);
+}
+.library-pill.level {
+  background: color-mix(in srgb, var(--apple-green) 14%, transparent);
+  color: var(--apple-green);
+}
+.library-open {
+  appearance: none;
+  border: 0;
+  background: var(--apple-blue);
+  color: #fff;
+  border-radius: 999px;
+  padding: .45rem 0;
+  font: inherit; font-weight: 760; font-size: .82rem;
+  margin-top: .35rem;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  display: block;
+}
+.library-open.epub {
+  background: color-mix(in srgb, #6e50b4 80%, transparent);
+}
+
+/* Empty state */
+.library-empty {
+  grid-column: 1 / -1;
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--apple-secondary);
+  border: 1px dashed var(--apple-line);
+  border-radius: 1.5rem;
+}
+
+/* Banner */
+.library-banner {
+  margin-bottom: 1rem;
+  padding: .85rem 1rem;
+  border: 1px solid color-mix(in srgb, #f3c96e 40%, var(--apple-line));
+  border-radius: 1.15rem;
+  background: color-mix(in srgb, #f3c96e 14%, var(--apple-surface));
+  font-size: .82rem;
+  line-height: 1.5;
+}
+.library-banner b { color: #b87c10; }
+@media (prefers-color-scheme: dark) {
+  .library-banner { border-color: color-mix(in srgb, #f3c96e 50%, transparent); background: color-mix(in srgb, #f3c96e 8%, var(--apple-surface)); }
+  .library-banner b { color: #ffd07a; }
+}
+
+.library-fda-info {
+  display: none;
+  margin-bottom: 1rem;
+  padding: .85rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--apple-blue) 35%, var(--apple-line));
+  border-radius: 1.15rem;
+  background: color-mix(in srgb, var(--apple-blue) 8%, var(--apple-surface));
+  font-size: .82rem; line-height: 1.5;
+}
+.library-fda-info b { color: var(--apple-blue); }
+
+/* =====================  Reader page  ===================== */
+.reader-shell {
+  display: grid; grid-template-rows: auto 1fr;
+  height: 100dvh;
+}
+.reader-bar {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; flex-wrap: wrap; align-items: center; gap: .55rem;
+  padding: .65rem .85rem;
+  border-bottom: 1px solid var(--apple-line);
+  background: color-mix(in srgb, var(--apple-surface) 90%, transparent);
+  backdrop-filter: blur(22px) saturate(170%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+}
+.reader-bar h1 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 760;
+  letter-spacing: -.02em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+.reader-bar .sub {
+  color: var(--apple-secondary);
+  font-size: .8rem;
+}
+.reader-btn {
+  appearance: none;
+  border: 1px solid var(--apple-line);
+  background: var(--apple-solid);
+  color: var(--apple-ink);
+  border-radius: 999px;
+  padding: .36rem .8rem;
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 760;
+  cursor: pointer;
+}
+.reader-btn:hover { background: color-mix(in srgb, var(--apple-blue) 10%, var(--apple-solid)); }
+.reader-btn:disabled { opacity: .35; cursor: not-allowed; }
+.reader-btn.primary {
+  background: var(--apple-blue); border-color: var(--apple-blue); color: #fff;
+}
+
+.reader-stage {
+  position: relative;
+  display: grid; place-items: center;
+  overflow: auto;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--apple-secondary) 4%, var(--apple-bg));
+}
+.reader-stage canvas {
+  display: block;
+  box-shadow: 0 12px 36px rgba(0,0,0,.18);
+  border-radius: .55rem;
+  background: #fff;
+  max-width: 100%;
+}
+.reader-error {
+  max-width: 32rem;
+  margin: auto;
+  padding: 1.5rem;
+  border: 1px solid var(--apple-line);
+  border-radius: 1.35rem;
+  background: var(--apple-surface);
+  text-align: left;
+}
+.reader-error h2 { margin: 0 0 .45rem; font-size: 1.15rem; }
+.reader-error p { margin: 0 0 .55rem; color: var(--apple-secondary); font-size: .9rem; line-height: 1.55; }
+.reader-error code {
+  display: block; padding: .55rem .7rem;
+  border-radius: .55rem;
+  background: color-mix(in srgb, var(--apple-secondary) 10%, var(--apple-solid));
+  font-size: .8rem;
+  word-break: break-all;
+}
+.reader-error-actions { display: flex; gap: .5rem; margin-top: 1rem; flex-wrap: wrap; }
+
+/* Mobile tweaks */
+@media (max-width: 760px) {
+  .library-hero {
+    padding: 1rem;
+    border-radius: 1.45rem;
+  }
+  .library-hero h2 { font-size: 1.55rem; }
+  .library-stats { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .library-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: .65rem; }
+  .library-body { padding: .65rem .7rem .85rem; }
+  .library-title { font-size: .74rem; }
+  .library-pill { font-size: .65rem; }
+
+  .reader-bar h1 { font-size: .9rem; }
+  .reader-btn { padding: .32rem .65rem; font-size: .78rem; }
+  .reader-stage { padding: .5rem; }
+}
+
+/* Eink mode: remove shadows, blur, gradients */
+:root[data-display="eink"] .library-hero,
+:root[data-display="eink"] .library-toolbar,
+:root[data-display="eink"] .library-card {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+  background: var(--apple-bg);
+}
+:root[data-display="eink"] .library-card { border-color: var(--apple-ink); }
+:root[data-display="eink"] .library-thumb { background: var(--apple-bg); }
+:root[data-display="eink"] .library-thumb-fallback { color: var(--apple-ink); }
+:root[data-display="eink"] .library-pill { background: var(--apple-bg); color: var(--apple-ink); border: 1px solid var(--apple-ink); }

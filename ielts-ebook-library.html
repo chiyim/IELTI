@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f2f2f7">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.png" type="image/png">
+<link rel="apple-touch-icon" href="icon.png">
+<title>IELTI · 阅读图书馆</title>
+<script>
+document.documentElement.classList.add('ielti-booting');
+try {
+  var m = localStorage.getItem('ielti_display_mode_v1') || localStorage.getItem('ielti_theme_v1')
+    || (new Date().getHours() >= 19 || new Date().getHours() < 7 ? 'dark' : 'light');
+  if (['light', 'dark', 'eink'].indexOf(m) > -1) {
+    document.documentElement.dataset.display = m;
+    document.documentElement.dataset.theme = m === 'dark' ? 'dark' : 'light';
+    document.documentElement.classList.toggle('eink-mode', m === 'eink');
+  }
+} catch (e) {}
+setTimeout(() => document.documentElement.classList.remove('ielti-booting'), 1200);
+</script>
+<link rel="stylesheet" href="apple-ui.css?v=20260805-37">
+<link rel="stylesheet" href="eink-ui.css?v=20260804-1">
+<link rel="stylesheet" href="library-ui.css?v=20260805-3">
+</head>
+<body class="apple-ui page-library">
+<main class="wrap">
+
+  <header class="top"><div class="brand"><small>IELTI READING LIBRARY</small><h1>阅读图书馆</h1><p>挑一本英文书读吧,目标是读懂更多一段落的英文。</p></div></header>
+
+  <div class="library-stats" aria-label="图书馆数据">
+    <div class="library-stat"><span>总书目</span><b id="statTotal">—</b></div>
+    <div class="library-stat"><span>字典 / 词汇</span><b id="statDict">—</b></div>
+    <div class="library-stat"><span>图像小说</span><b id="statGN">—</b></div>
+    <div class="library-stat"><span>雅思核心</span><b id="statIelts">—</b></div>
+  </div>
+
+  <section class="library-toolbar" aria-label="筛选与搜索">
+    <div class="library-toolbar-row">
+      <label class="library-search" for="libSearch">
+        <svg class="library-search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+        <input id="libSearch" type="search" placeholder="搜索书名、作者、标签…" autocomplete="off" spellcheck="false">
+      </label>
+      <label class="library-sort" for="libSort">
+        <span class="sub">排序</span>
+        <select id="libSort">
+          <option value="title">名称</option>
+          <option value="level">难度</option>
+        </select>
+      </label>
+    </div>
+    <div class="library-chip-row" id="libCategories" role="tablist" aria-label="分类筛选"></div>
+    <div class="library-chip-row" id="libLevels" role="tablist" aria-label="难度筛选"></div>
+  </section>
+
+  <div class="library-result-bar">
+    <span id="libResultCount">—</span>
+    <button class="library-clear" id="libClear" type="button" hidden>清空筛选</button>
+  </div>
+
+  <section id="grid" class="library-grid" aria-label="书目列表"></section>
+
+  <footer class="foot" style="margin-top:1.6rem;color:var(--apple-secondary);font-size:.78rem;text-align:center">
+    缩略图由 macOS Quick Look 离线生成 · 阅读器由 PDF.js 提供 ·
+    进度数据保存在本设备 localStorage
+  </footer>
+</main>
+
+<script src="ielti-config.js?v=20260805-1"></script>
+<script src="ielts-ebook-library-data.js?v=20260805-7"></script>
+<script src="ielti-core.js?v=20260805-38"></script>
+<script>
+(function () {
+  const BOOKS = window.IELTI_LIBRARY || [];
+  const CATEGORIES = {
+    'dictionary':    '字典 · 视觉词汇',
+    'vocab-grammar': '语法 · 词汇',
+    'knowledge':     '百科 · 知识',
+    'history':       '历史 · 信息',
+    'movie-tie-in':  '影视 · IP',
+    'kids-chapter':  '儿童章节书',
+    'picture-books': '绘本 · 启蒙',
+    'graphic-novels':'图像小说',
+    'ya-series':     '青少年系列',
+  };
+  const LEVEL_RANK = ['A1-A2','A2-B1','B1-B2','B1-C1','B2-C1','C1-C2'];
+  const LEVEL_LABEL = {
+    'A1-A2':  '入门 A1-A2',
+    'A2-B1':  '基础 A2-B1',
+    'B1-B2':  '中等 B1-B2',
+    'B1-C1':  '中高级 B1-C1',
+    'B2-C1':  '高级 B2-C1',
+    'C1-C2':  '高阶 C1-C2',
+  };
+
+  function escapeHtml(s) {
+    return String(s || '').replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    })[c]);
+  }
+  function initial(title) {
+    const t = (title || '').trim();
+    return t ? t.charAt(0).toUpperCase() : '📖';
+  }
+
+  // Build the URL to open the book. All PDFs are served from the NAS HTTP server.
+  function buildOpenUrl(book) {
+    const base = window.IELTI_CONFIG.libraryPdfDir || 'http://192.168.10.115/IELTI/03漫画书合集pdf';
+    return base.replace(/\/$/, '') + '/' + encodeURIComponent(book.file);
+  }
+
+  // State
+  let activeCat = '';
+  let activeLevel = '';
+  let query = '';
+  let sortBy = 'title';
+
+  // Counts
+  const totalEl = document.getElementById('statTotal');
+  const dictEl = document.getElementById('statDict');
+  const gnEl = document.getElementById('statGN');
+  const ieltEl = document.getElementById('statIelts');
+  totalEl.textContent = BOOKS.length;
+  dictEl.textContent = BOOKS.filter(b => b.category === 'dictionary').length;
+  gnEl.textContent = BOOKS.filter(b => ['graphic-novels','ya-series','kids-chapter','movie-tie-in'].includes(b.category)).length;
+  ieltEl.textContent = BOOKS.filter(b => (b.tags || []).includes('ielts-essential') || (b.tags || []).includes('ielts')).length;
+
+  // Category chips
+  const catRow = document.getElementById('libCategories');
+  const cats = BOOKS.reduce((m, b) => (m[b.category] = (m[b.category] || 0) + 1, m), {});
+  const catBtn = (key, label, count) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'library-chip' + (activeCat === key ? ' active' : '');
+    b.dataset.cat = key;
+    b.setAttribute('role', 'tab');
+    b.setAttribute('aria-selected', activeCat === key);
+    b.innerHTML = `${escapeHtml(label)}<span class="chip-count">${count}</span>`;
+    b.onclick = () => { activeCat = activeCat === key ? '' : key; render(); };
+    return b;
+  };
+  catRow.appendChild(catBtn('', '全部', BOOKS.length));
+  Object.keys(CATEGORIES).forEach(key => {
+    if (cats[key]) catRow.appendChild(catBtn(key, CATEGORIES[key], cats[key]));
+  });
+
+  // Level chips
+  const lvlRow = document.getElementById('libLevels');
+  const lvlBtn = (key, label) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'library-chip' + (activeLevel === key ? ' active' : '');
+    b.dataset.level = key;
+    b.setAttribute('role', 'tab');
+    b.setAttribute('aria-selected', activeLevel === key);
+    b.textContent = label;
+    b.onclick = () => { activeLevel = activeLevel === key ? '' : key; render(); };
+    return b;
+  };
+  const lvlCounts = BOOKS.reduce((m, b) => (m[b.level] = (m[b.level] || 0) + 1, m), {});
+  lvlRow.appendChild(lvlBtn('', '全部难度'));
+  LEVEL_RANK.forEach(k => { if (lvlCounts[k]) lvlRow.appendChild(lvlBtn(k, LEVEL_LABEL[k])); });
+
+  // Search + sort wiring
+  const searchEl = document.getElementById('libSearch');
+  searchEl.addEventListener('input', () => { query = searchEl.value.trim(); render(); });
+  const sortEl = document.getElementById('libSort');
+  sortEl.addEventListener('change', () => { sortBy = sortEl.value; render(); });
+  const clearBtn = document.getElementById('libClear');
+  clearBtn.onclick = () => { activeCat = ''; activeLevel = ''; query = ''; sortBy = 'title'; searchEl.value = ''; sortEl.value = 'title'; render(); };
+
+  // Filtering / sorting
+  function filtered() {
+    let arr = BOOKS;
+    if (activeCat)   arr = arr.filter(b => b.category === activeCat);
+    if (activeLevel) arr = arr.filter(b => b.level === activeLevel);
+    if (query) {
+      const q = query.toLowerCase();
+      arr = arr.filter(b =>
+        (b.title || '').toLowerCase().includes(q) ||
+        (b.author || '').toLowerCase().includes(q) ||
+        (b.tags || []).some(t => t.toLowerCase().includes(q)) ||
+        (b.file || '').toLowerCase().includes(q)
+      );
+    }
+    const sorted = arr.slice();
+    switch (sortBy) {
+      case 'level':     sorted.sort((a,b) => LEVEL_RANK.indexOf(a.level) - LEVEL_RANK.indexOf(b.level)); break;
+      case 'title':
+      default:          sorted.sort((a,b) => (a.title || '').localeCompare(b.title || '', 'zh-Hans-CN'));
+    }
+    return sorted;
+  }
+
+  const grid = document.getElementById('grid');
+  function render() {
+    // Refresh chip activation
+    catRow.querySelectorAll('.library-chip').forEach(el => {
+      const on = el.dataset.cat === activeCat;
+      el.classList.toggle('active', on);
+      el.setAttribute('aria-selected', on);
+    });
+    lvlRow.querySelectorAll('.library-chip').forEach(el => {
+      const on = el.dataset.level === activeLevel;
+      el.classList.toggle('active', on);
+      el.setAttribute('aria-selected', on);
+    });
+
+    const list = filtered();
+    const resultEl = document.getElementById('libResultCount');
+    resultEl.textContent = `共 ${list.length} 本` + (BOOKS.length !== list.length ? ` / ${BOOKS.length} 本` : '');
+
+    clearBtn.hidden = !(activeCat || activeLevel || query || sortBy !== 'title');
+
+    if (!list.length) {
+      grid.innerHTML = '<div class="library-empty">没找到匹配的书 — 试试清空筛选或换个关键词。</div>';
+      return;
+    }
+
+    const cat = (c) => CATEGORIES[c] || c;
+    grid.innerHTML = list.map(b => {
+      const title = b.title || b.file;
+      const author = b.author || '';
+      const isEpub = b.ext === 'epub';
+      const readerHref = isEpub
+        ? buildOpenUrl(b)
+        : 'ielts-ebook-reader.html?id=' + encodeURIComponent(b.id);
+      const fallback = escapeHtml(initial(title));
+      return `<a class="library-card" href="${readerHref}" data-id="${escapeHtml(b.id)}"${isEpub ? ' target="_blank" rel="noopener"' : ''}>
+        <div class="library-thumb">
+          <img loading="lazy" decoding="async"
+               src="thumbs/${escapeHtml(b.id)}.jpg"
+               alt="${escapeHtml(title)}"
+               onerror="this.remove();this.parentNode.querySelector('.library-thumb-fallback')?.remove();var f=document.createElement('div');f.className='library-thumb-fallback';f.textContent=${"'"} + fallback + "${"'"};this.parentNode.appendChild(f);">
+          <span class="library-thumb-ext ${isEpub ? 'library-thumb-epub' : ''}">${isEpub ? 'EPUB' : 'PDF'}</span>
+        </div>
+        <div class="library-body">
+          <div class="library-title">${escapeHtml(title)}</div>
+          ${author ? `<div class="library-author">${escapeHtml(author)}</div>` : ''}
+          <div class="library-meta">
+            <span class="library-pill cat">${escapeHtml(cat(b.category))}</span>
+            <span class="library-pill level">${escapeHtml(b.level)}</span>
+          </div>
+          <span class="library-open ${isEpub ? 'epub' : ''}">${isEpub ? '在 Books 中打开' : '阅读 →'}</span>
+        </div>
+      </a>`;
+    }).join('');
+  }
+  render();
+})();
+</script>
+</body>
+</html>

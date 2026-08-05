@@ -445,7 +445,7 @@
     document.body.classList.add('apple-ui');
     applyRuntimeIcon();
     const page = decodeURIComponent(location.pathname.split('/').pop() || 'index.html');
-    const pageClass = page === 'index.html' ? 'page-today' : page === 'ielts-roadmap.html' ? 'page-roadmap' : page === 'ielts-core-vocabulary.html' ? 'page-core' : page === 'ielts-vocabulary-categories.html' ? 'page-class' : page === 'ielts_word_memory_v2_ipa.html' ? 'page-review' : page === '121-letter-combinations.html' ? 'page-phonics' : '';
+    const pageClass = page === 'index.html' ? 'page-today' : page === 'ielts-roadmap.html' ? 'page-roadmap' : page === 'ielts-core-vocabulary.html' ? 'page-core' : page === 'ielts-vocabulary-categories.html' ? 'page-class' : page === 'ielts_word_memory_v2_ipa.html' ? 'page-review' : page === '121-letter-combinations.html' ? 'page-phonics' : (page === 'ielts-ebook-library.html' || page === 'ielts-ebook-reader.html') ? 'page-library' : '';
     if (pageClass) document.body.classList.add(pageClass);
     if (page === 'ielts-video-player.html') return;
     const syncPageTheme = () => document.body.classList.toggle('light', document.documentElement.dataset.theme === 'light');
@@ -496,12 +496,14 @@
           core: '<rect x="5" y="5" width="14" height="14" rx="2.8"/><path d="m8.5 16 3.5-8 3.5 8"/><path d="M10 13h4"/>',
           review: '<path d="M12 5.2 13.5 9a2.6 2.6 0 0 0 1.5 1.5l3.8 1.5-3.8 1.5a2.6 2.6 0 0 0-1.5 1.5L12 18.8l-1.5-3.8A2.6 2.6 0 0 0 9 13.5L5.2 12 9 10.5A2.6 2.6 0 0 0 10.5 9z"/><path d="m17.4 4.5.45 1.1 1.1.45-1.1.45-.45 1.1-.45-1.1-1.1-.45 1.1-.45z"/>',
           phonics: '<rect x="5" y="5.5" width="6.5" height="6.5" rx="1.6"/><rect x="12.5" y="12" width="6.5" height="6.5" rx="1.6"/><path d="M11.5 8.75h1.7a2.3 2.3 0 0 1 2.3 2.3V12"/><path d="M12.5 15.25h-1.7a2.3 2.3 0 0 1-2.3-2.3V12"/>',
-          class: '<rect x="5" y="5" width="14" height="14" rx="2.8"/><path d="M8.5 9h7"/><path d="M8.5 12h7"/><path d="M8.5 15h5.2"/>'
+          class: '<rect x="5" y="5" width="14" height="14" rx="2.8"/><path d="M8.5 9h7"/><path d="M8.5 12h7"/><path d="M8.5 15h5.2"/>',
+          library: '<rect x="4.5" y="6.5" width="7" height="11" rx="1.4"/><rect x="12.5" y="6.5" width="7" height="11" rx="1.4"/><path d="M11.5 9.5h1.5"/><path d="M11.5 12h1.5"/><path d="M11.5 14.5h1.5"/>'
         };
         return `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">${paths[name]}</svg>`;
       };
-      const tabs = [['index.html',navIcon('today'),'今日'],['ielts-roadmap.html',navIcon('roadmap'),'课程'],['ielts_word_memory_v2_ipa.html',navIcon('review'),'复习'],['121-letter-combinations.html',navIcon('phonics'),'组合'],['ielts-core-vocabulary.html',navIcon('core'),'词表'],['ielts-vocabulary-categories.html',navIcon('class'),'词库']];
-      const nav = document.createElement('nav'); nav.className = 'apple-tabbar'; nav.setAttribute('aria-label','主要导航'); nav.innerHTML = `<i class="apple-nav-indicator" aria-hidden="true"></i>`+tabs.map(([href,icon,label]) => `<a href="${href}"${current === href ? ' class="active" aria-current="page"' : ''} aria-label="${label}" title="${label}"><span>${icon}</span><em>${label}</em></a>`).join(''); document.body.appendChild(nav);
+      const tabs = [['index.html',navIcon('today'),'今日'],['ielts-roadmap.html',navIcon('roadmap'),'课程'],['ielts_word_memory_v2_ipa.html',navIcon('review'),'复习'],['121-letter-combinations.html',navIcon('phonics'),'组合'],['ielts-core-vocabulary.html',navIcon('core'),'词表'],['ielts-vocabulary-categories.html',navIcon('class'),'词库'],['ielts-ebook-library.html',navIcon('library'),'图书馆','apple-nav-desktop-only']];
+      const isLibraryPage = page === 'ielts-ebook-library.html' || page === 'ielts-ebook-reader.html';
+      const nav = document.createElement('nav'); nav.className = 'apple-tabbar'; nav.setAttribute('aria-label','主要导航'); nav.innerHTML = `<i class="apple-nav-indicator" aria-hidden="true"></i>`+tabs.map(([href,icon,label,extraClass]) => { const isActive = current === href || (isLibraryPage && href === 'ielts-ebook-library.html'); const cls = [isActive ? 'active' : '', extraClass || ''].filter(Boolean).join(' '); return `<a href="${href}"${cls ? ` class="${cls}"` : ''}${isActive ? ' aria-current="page"' : ''} aria-label="${label}" title="${label}"><span>${icon}</span><em>${label}</em></a>`; }).join(''); document.body.appendChild(nav);
       const rail = document.createElement('aside'); rail.className = 'apple-desktop-rail'; rail.setAttribute('aria-label', '桌面导航');
       const avatarKey = 'ielti_navigation_avatar_v1';
       const defaultAvatar = DEFAULT_ICON;

@@ -6,4 +6,6 @@
 *.json.backup
 node_modules/
 deploy/
+pdfs/
+thumbs/
 .aider*
