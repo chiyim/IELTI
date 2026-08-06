@@ -28,37 +28,12 @@
   display: flex; flex-wrap: wrap; gap: .65rem;
   margin-top: 1rem;
 }
-.library-stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: .75rem;
-  margin-bottom: 1rem;
-}
-.library-stat {
-  padding: .85rem 1rem;
-  border: 1px solid var(--apple-line);
-  border-radius: 1.15rem;
-  background: color-mix(in srgb, var(--apple-solid) 82%, transparent);
-}
-.library-stat span {
-  display: block;
-  color: var(--apple-secondary);
-  font-size: .72rem;
-  font-weight: 720;
-}
-.library-stat b {
-  display: block;
-  margin-top: .15rem;
-  font-size: 1.35rem;
-  line-height: 1.1;
-  font-weight: 780;
-}
-
 /* Toolbar */
 .library-toolbar {
   display: grid;
   gap: .85rem;
   padding: 1rem 1.1rem;
+  margin-top: 1rem;
   margin-bottom: 1rem;
   border: 1px solid var(--apple-line);
   border-radius: 1.55rem;
@@ -67,48 +42,21 @@
   backdrop-filter: blur(22px) saturate(170%);
   -webkit-backdrop-filter: blur(22px) saturate(170%);
 }
-.library-toolbar-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: .6rem;
-}
-.library-search {
-  flex: 1 1 14rem;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-  padding: .55rem .85rem;
-  border: 1px solid var(--apple-line);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--apple-solid) 88%, transparent);
-}
-.library-search input {
-  flex: 1; min-width: 0;
-  appearance: none; border: 0; background: transparent; outline: none;
-  font: inherit; font-size: .92rem;
-  color: var(--apple-ink);
-}
-.library-search input::placeholder { color: var(--apple-secondary); }
-.library-search-icon {
-  width: 1rem; height: 1rem; flex: 0 0 auto;
-  color: var(--apple-secondary);
-}
 .library-sort {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: .35rem;
-  padding: .35rem .5rem;
+  height: 2rem;
+  padding: 0 .5rem;
   border: 1px solid var(--apple-line);
   border-radius: 999px;
   background: color-mix(in srgb, var(--apple-solid) 88%, transparent);
   font-size: .85rem;
+  color: var(--apple-secondary);
 }
 .library-sort select {
   appearance: none; border: 0; background: transparent; outline: none;
   font: inherit; font-size: .85rem; color: var(--apple-ink);
-  padding: .15rem .25rem;
 }
 .library-chip-row {
   display: flex; flex-wrap: wrap; gap: .4rem;
@@ -144,6 +92,12 @@
   appearance: none; border: 0; background: transparent;
   color: var(--apple-blue); font: inherit; font-weight: 720;
   cursor: pointer; padding: 0;
+}
+.library-result-actions {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-left: auto;
 }
 
 /* Grid — 6 books per row on desktop */
@@ -384,7 +338,6 @@
     border-radius: 1.45rem;
   }
   .library-hero h2 { font-size: 1.55rem; }
-  .library-stats { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .library-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: .65rem; }
   .library-body { padding: .65rem .7rem .85rem; }
   .library-title { font-size: .74rem; }
@@ -400,7 +353,8 @@
   display: inline-flex;
   align-items: center;
   gap: .35rem;
-  padding: .35rem .5rem;
+  height: 2rem;
+  padding: 0 .5rem;
   border: 1px solid var(--apple-line);
   border-radius: 999px;
   background: color-mix(in srgb, var(--apple-solid) 88%, transparent);
@@ -425,9 +379,9 @@
   border-radius: 1rem;
 }
 .library-grid.list-mode .library-thumb {
-  width: 48px;
-  height: 48px;
-  min-width: 48px;
+  width: 72px;
+  height: 72px;
+  min-width: 72px;
   aspect-ratio: 1 / 1;
   border-radius: .5rem;
   background: color-mix(in srgb, var(--apple-blue) 8%, var(--apple-solid));
@@ -480,6 +434,18 @@
 }
 
 @media (max-width: 760px) {
+  .library-toolbar {
+    gap: .55rem;
+    padding: .65rem .75rem;
+  }
+  .library-chip {
+    padding: .22rem .55rem;
+    font-size: .7rem;
+    gap: .2rem;
+  }
+  .library-chip-row {
+    gap: .3rem;
+  }
   .library-grid.list-mode {
     grid-template-columns: 1fr;
   }
@@ -489,7 +455,7 @@
     padding: .45rem .65rem;
   }
   .library-grid.list-mode .library-thumb {
-    width: 38px; height: 38px; min-width: 38px;
+    width: 56px; height: 56px; min-width: 56px;
   }
   .library-grid.list-mode .library-body {
     gap: .15rem;
