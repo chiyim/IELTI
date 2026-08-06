@@ -91,7 +91,7 @@ body.apple-ui .apple-mobile-title-row .apple-rail-logo:focus-visible{
 @media(max-width:760px) and (prefers-reduced-motion:reduce){body.apple-ui.apple-nav-hidden .apple-tabbar{transform:none!important;opacity:0}}
 
 /* One compact title system across every phone page, based on the review centre. */
-@media(max-width:760px){body.page-today .wrap,body.page-roadmap .wrap,body.page-core .wrap,body.page-review .app,body.page-library .wrap{padding-top:.75rem!important}body.page-class>header{padding-top:.75rem!important}body.page-today .top,body.page-roadmap .hero,body.page-core .hero,body.page-review .top{margin:0 0 .55rem!important;padding:0 .15rem .4rem!important}body.page-class .htop{margin:0 0 .4rem;align-items:flex-end}body.apple-ui .page-kicker,body.page-review .brand small,body.page-today .eyebrow{display:block;margin:0 0 .22rem!important;font-size:.66rem!important;font-weight:800!important;line-height:1.2!important;letter-spacing:.12em!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}body.page-roadmap .hero h1,body.page-core .hero h1,body.page-class .htop h1,body.page-today .top h1,body.page-review .brand h1,body.page-library .brand h1{margin:0!important;font-size:clamp(1.55rem,6.7vw,1.72rem)!important;font-weight:760!important;line-height:1.08!important;letter-spacing:-.035em!important;text-wrap:balance}body .apple-mobile-title-row{min-height:2.9rem;align-items:center;gap:.2rem}body.page-class .page-title-brand h1{line-height:1.08!important}body.page-roadmap .hero .sub,body.page-core .hero .sub,body.page-review .brand p,body.page-today .date,body.page-library .brand p{display:none!important}}
+@media(max-width:760px){body.page-today .wrap,body.page-roadmap .wrap,body.page-core .wrap,body.page-review .app,body.page-library .wrap{padding-top:.75rem!important}body.page-class>header{padding-top:.75rem!important}body.page-today .top,body.page-roadmap .hero,body.page-core .hero,body.page-review .top{margin:0 0 .55rem!important;padding:0 .15rem .4rem!important}body.page-class .htop{margin:0 0 .4rem;align-items:flex-end}body.apple-ui .page-kicker,body.page-review .brand small,body.page-library .brand small,body.page-today .eyebrow{display:block;margin:0 0 .22rem!important;font-size:.66rem!important;font-weight:800!important;line-height:1.2!important;letter-spacing:.12em!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}body.page-roadmap .hero h1,body.page-core .hero h1,body.page-class .htop h1,body.page-today .top h1,body.page-review .brand h1,body.page-library .brand h1{margin:0!important;font-size:clamp(1.55rem,6.7vw,1.72rem)!important;font-weight:760!important;line-height:1.08!important;letter-spacing:-.035em!important;text-wrap:balance}body .apple-mobile-title-row{min-height:2.9rem;align-items:center;gap:.2rem}body.page-class .page-title-brand h1{line-height:1.08!important}body.page-roadmap .hero .sub,body.page-core .hero .sub,body.page-review .brand p,body.page-today .date,body.page-library .brand p{display:none!important}}
 @media(max-width:760px){body.page-class .htop{display:block;margin:0 0 .55rem;padding:0 .15rem .4rem}body.page-class .page-title-brand{width:100%;margin:0}body.page-class .page-title-brand.apple-mobile-title-host{display:block}body.page-class .page-title-brand .apple-mobile-title-row{display:flex;width:100%}body.page-class .page-title-brand h1{flex:1;min-width:0;white-space:nowrap}body.page-class .page-title-brand .apple-theme-toggle,body.page-class .page-title-brand #themeBtn,body.page-class .page-title-brand #collapseBtn{position:static;flex:0 0 2.75rem;width:2.75rem;height:2.75rem;margin:0;padding:0!important}}
 @media(max-width:760px){body.page-review .brand h1,body.page-today .top h1,body.page-roadmap .hero h1,body.page-core .hero h1,body.page-class .htop h1,body.page-library .brand h1{font-size:clamp(1.68rem,7.2vw,1.86rem)!important;line-height:1.06!important}}
 @media(max-width:760px){.apple-mobile-title-host{width:100%;align-self:stretch}.apple-mobile-title-row{display:flex;align-items:center;width:100%;min-height:2.75rem;gap:.5rem}.apple-mobile-title-row h1{min-width:0;margin-top:0!important;margin-bottom:0!important;line-height:1.05!important}.apple-mobile-title-row .apple-theme-toggle{position:static;flex:0 0 2.75rem;margin-left:auto}.apple-mobile-title-row #libraryBtn{flex:0 0 auto;margin:0}body.page-class .htop h1{margin-top:0!important;margin-bottom:0!important;line-height:2.75rem!important}}
@@ -1381,6 +1381,7 @@ body.page-today .wrap,
 body.page-roadmap .wrap,
 body.page-core .wrap,
 body.page-review .app,
+body.page-library .wrap,
 body.page-phonics .phonics-app{
   width:100%!important;
   max-width:var(--ielti-page-max)!important;
@@ -1398,6 +1399,7 @@ body.page-today .top,
 body.page-roadmap .hero,
 body.page-core .hero,
 body.page-review .top,
+body.page-library .top,
 body.page-phonics .phonics-head{
   margin:0 0 var(--ielti-title-bottom)!important;
   padding:0!important;
@@ -1427,6 +1429,7 @@ body.page-class .htop{
 body.apple-ui .eyebrow,
 body.apple-ui .page-kicker,
 body.page-review .brand small,
+body.page-library .brand small,
 body.page-phonics .eyebrow{
   display:block!important;
   margin:0 0 .32rem!important;
@@ -1455,6 +1458,7 @@ body.page-today .top h1,
 body.page-roadmap .hero h1,
 body.page-core .hero h1,
 body.page-review .brand h1,
+body.page-library .brand h1,
 body.page-class .htop h1,
 body.page-phonics .phonics-head h1{
   margin:0!important;
@@ -1471,6 +1475,7 @@ body.page-today .date,
 body.page-roadmap .hero .sub,
 body.page-core .hero .sub,
 body.page-review .brand p,
+body.page-library .brand p,
 body.page-class .statline,
 body.page-phonics .head-meta{
   margin:.42rem 0 0!important;
@@ -1485,16 +1490,19 @@ body.page-phonics .head-meta{
 body.page-roadmap .hero .sub,
 body.page-core .hero .sub,
 body.page-review .brand p,
+body.page-library .brand p,
 body.page-class .statline{
   max-width:44rem!important;
 }
 body.page-class .page-title-brand,
-body.page-review .brand{
+body.page-review .brand,
+body.page-library .brand{
   min-width:0!important;
   margin-right:auto!important;
 }
 body.page-class .page-title-brand h1,
 body.page-review .brand h1,
+body.page-library .brand h1,
 body.page-phonics .phonics-head h1{
   white-space:nowrap!important;
 }
@@ -1515,6 +1523,7 @@ body.page-phonics .phonics-head h1{
   body.page-roadmap .hero,
   body.page-core .hero,
   body.page-review .top,
+  body.page-library .top,
   body.page-phonics .phonics-head{
     display:block!important;
     text-align:left!important;

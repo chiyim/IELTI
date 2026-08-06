@@ -21,12 +21,13 @@ try {
 } catch (e) {}
 setTimeout(() => document.documentElement.classList.remove('ielti-booting'), 1200);
 </script>
-<link rel="stylesheet" href="apple-ui.css?v=20260805-37">
+<link rel="stylesheet" href="apple-ui.css?v=20260806-1">
 <link rel="stylesheet" href="eink-ui.css?v=20260804-1">
 <link rel="stylesheet" href="library-ui.css?v=20260805-3">
+<style>*,*::before,*::after{box-sizing:border-box}body{margin:0;background:var(--apple-bg);color:var(--apple-ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif}.top{display:flex;justify-content:space-between;gap:20px;align-items:center}.brand small{display:block;color:var(--apple-blue);font-weight:800;letter-spacing:.16em}.brand h1{margin:5px 0;font-family:Georgia,"Songti SC",serif;font-size:clamp(27px,4vw,43px);font-weight:600}.brand p{margin:0;color:var(--apple-secondary)}@media(max-width:520px){.top{align-items:flex-start}}</style>
 </head>
 <body class="apple-ui page-library">
-<main class="wrap">
+<main class="wrap" style="max-width:1080px;margin:0 auto;box-sizing:border-box">
 
   <header class="top"><div class="brand"><small>IELTI READING LIBRARY</small><h1>阅读图书馆</h1><p>挑一本英文书读吧,目标是读懂更多一段落的英文。</p></div></header>
 
@@ -50,6 +51,10 @@ setTimeout(() => document.documentElement.classList.remove('ielti-booting'), 120
           <option value="level">难度</option>
         </select>
       </label>
+      <button class="library-view-toggle" id="libViewToggle" type="button" title="切换视图">
+        <svg id="libViewIconGrid" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="3" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="3" y="14" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="14" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+        <svg id="libViewIconList" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" hidden><line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="18" x2="21" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
     </div>
     <div class="library-chip-row" id="libCategories" role="tablist" aria-label="分类筛选"></div>
     <div class="library-chip-row" id="libLevels" role="tablist" aria-label="难度筛选"></div>
@@ -92,6 +97,41 @@ setTimeout(() => document.documentElement.classList.remove('ielti-booting'), 120
     }
     img.dataset.triedLocal = '1';
     img.src = 'thumbs/' + img.dataset.thumbId + '.jpg';
+  };
+  // Thumbnail error handler for list mode — only one fallback level
+  window.IELTI_thumbSmError = function (img) {
+    img.remove();
+    const box = img.parentNode;
+    const old = box.querySelector('.library-thumb-fallback');
+    if (old) old.remove();
+    const f = document.createElement('div');
+    f.className = 'library-thumb-fallback';
+    try { f.textContent = decodeURIComponent(img.dataset.fallback || '📖'); }
+    catch (e) { f.textContent = '📖'; }
+    box.appendChild(f);
+  };
+  // View mode: grid (default for local) or list (default for deployed)
+  const VIEW_KEY = 'ielti_library_view_mode';
+  function isLocalHost() {
+    const h = location.hostname || '';
+    return h === 'localhost' || h === '127.0.0.1' || h.startsWith('192.168.') || h.startsWith('10.') || h === '[::1]';
+  }
+  let viewMode = localStorage.getItem(VIEW_KEY) || (isLocalHost() ? 'grid' : 'list');
+  function applyViewMode() {
+    const grid = document.getElementById('grid');
+    const toggle = document.getElementById('libViewToggle');
+    const iconGrid = document.getElementById('libViewIconGrid');
+    const iconList = document.getElementById('libViewIconList');
+    grid.classList.toggle('list-mode', viewMode === 'list');
+    toggle.title = viewMode === 'grid' ? '切换到列表视图' : '切换到网格视图';
+    iconGrid.hidden = viewMode === 'list';
+    iconList.hidden = viewMode === 'grid';
+    localStorage.setItem(VIEW_KEY, viewMode);
+  }
+  document.getElementById('libViewToggle').onclick = function () {
+    viewMode = viewMode === 'grid' ? 'list' : 'grid';
+    applyViewMode();
+    render();
   };
   const CATEGORIES = {
     'dictionary':    '字典 · 视觉词汇',
@@ -239,36 +279,67 @@ setTimeout(() => document.documentElement.classList.remove('ielti-booting'), 120
     }
 
     const cat = (c) => CATEGORIES[c] || c;
-    grid.innerHTML = list.map(b => {
-      const title = b.title || b.file;
-      const author = b.author || '';
-      const isEpub = b.ext === 'epub';
-      const readerHref = isEpub
-        ? buildOpenUrl(b)
-        : 'ielts-ebook-reader.html?id=' + encodeURIComponent(b.id);
-      const fallbackUri = encodeURIComponent(initial(title));
-      return `<a class="library-card" href="${readerHref}" data-id="${escapeHtml(b.id)}"${isEpub ? ' target="_blank" rel="noopener"' : ''}>
-        <div class="library-thumb">
-          <img loading="lazy" decoding="async"
-               src="${thumbBase}/${escapeHtml(b.id)}.jpg"
-               data-thumb-id="${escapeHtml(b.id)}"
-               data-fallback="${fallbackUri}"
-               alt="${escapeHtml(title)}"
-               onerror="window.IELTI_thumbError&&window.IELTI_thumbError(this)">
-          <span class="library-thumb-ext ${isEpub ? 'library-thumb-epub' : ''}">${isEpub ? 'EPUB' : 'PDF'}</span>
-        </div>
-        <div class="library-body">
-          <div class="library-title">${escapeHtml(title)}</div>
-          ${author ? `<div class="library-author">${escapeHtml(author)}</div>` : ''}
-          <div class="library-meta">
-            <span class="library-pill cat">${escapeHtml(cat(b.category))}</span>
-            <span class="library-pill level">${escapeHtml(b.level)}</span>
+    if (viewMode === 'list') {
+      grid.innerHTML = list.map(b => {
+        const title = b.title || b.file;
+        const author = b.author || '';
+        const isEpub = b.ext === 'epub';
+        const readerHref = isEpub
+          ? buildOpenUrl(b)
+          : 'ielts-ebook-reader.html?id=' + encodeURIComponent(b.id);
+        const fallbackUri = encodeURIComponent(initial(title));
+        return `<a class="library-card" href="${readerHref}" data-id="${escapeHtml(b.id)}"${isEpub ? ' target="_blank" rel="noopener"' : ''}>
+          <div class="library-thumb">
+            <img loading="lazy" decoding="async"
+                 src="thumbs-sm/${escapeHtml(b.id)}.jpg"
+                 data-fallback="${fallbackUri}"
+                 alt="${escapeHtml(title)}"
+                 onerror="window.IELTI_thumbSmError&&window.IELTI_thumbSmError(this)">
           </div>
-          <span class="library-open ${isEpub ? 'epub' : ''}">${isEpub ? '在 Books 中打开' : '阅读 →'}</span>
-        </div>
-      </a>`;
-    }).join('');
+          <div class="library-body">
+            <div class="library-title">${escapeHtml(title)}</div>
+            ${author ? `<div class="library-author">${escapeHtml(author)}</div>` : ''}
+            <div class="library-list-row">
+              <span class="library-open ${isEpub ? 'epub' : ''}">${isEpub ? 'Books' : '阅读 →'}</span>
+              <span class="library-pill cat">${escapeHtml(cat(b.category))}</span>
+              <span class="library-pill level">${escapeHtml(b.level)}</span>
+            </div>
+          </div>
+        </a>`;
+      }).join('');
+    } else {
+      grid.innerHTML = list.map(b => {
+        const title = b.title || b.file;
+        const author = b.author || '';
+        const isEpub = b.ext === 'epub';
+        const readerHref = isEpub
+          ? buildOpenUrl(b)
+          : 'ielts-ebook-reader.html?id=' + encodeURIComponent(b.id);
+        const fallbackUri = encodeURIComponent(initial(title));
+        return `<a class="library-card" href="${readerHref}" data-id="${escapeHtml(b.id)}"${isEpub ? ' target="_blank" rel="noopener"' : ''}>
+          <div class="library-thumb">
+            <img loading="lazy" decoding="async"
+                 src="${thumbBase}/${escapeHtml(b.id)}.jpg"
+                 data-thumb-id="${escapeHtml(b.id)}"
+                 data-fallback="${fallbackUri}"
+                 alt="${escapeHtml(title)}"
+                 onerror="window.IELTI_thumbError&&window.IELTI_thumbError(this)">
+            <span class="library-thumb-ext ${isEpub ? 'library-thumb-epub' : ''}">${isEpub ? 'EPUB' : 'PDF'}</span>
+          </div>
+          <div class="library-body">
+            <div class="library-title">${escapeHtml(title)}</div>
+            ${author ? `<div class="library-author">${escapeHtml(author)}</div>` : ''}
+            <div class="library-meta">
+              <span class="library-pill cat">${escapeHtml(cat(b.category))}</span>
+              <span class="library-pill level">${escapeHtml(b.level)}</span>
+            </div>
+            <span class="library-open ${isEpub ? 'epub' : ''}">${isEpub ? '在 Books 中打开' : '阅读 →'}</span>
+          </div>
+        </a>`;
+      }).join('');
+    }
   }
+  applyViewMode();
   render();
 })();
 </script>

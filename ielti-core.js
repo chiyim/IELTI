@@ -335,6 +335,8 @@
   if ('speechSynthesis' in global) { pickEnglishVoice(); if (speechSynthesis.addEventListener) speechSynthesis.addEventListener('voiceschanged', voicesReady); else speechSynthesis.onvoiceschanged = voicesReady; }
 
   let syncTimer = null, syncing = false, resyncRequested = false, resyncPushRequested = false, applyingRemote = false;
+  let _firstSyncDone = false, _firstSyncResolve = null;
+  const _firstSyncPromise = new Promise(r => { _firstSyncResolve = r; });
   function syncStatus(text, state = '') { document.querySelectorAll('[data-ielti-sync],#syncState').forEach(el => { el.className = `ielti-sync-state ${state}`; el.textContent = `${CLOUD_SYNC_ENABLED ? '☁︎' : '◉'} ${text}`; }); }
   function syncErrorMessage(error) {
     const msg = String(error?.message || error || '');
@@ -416,6 +418,7 @@
     catch (error) { console.warn('IELTI sync:', error, SYNC_URL); syncStatus(syncErrorMessage(error), 'error'); return false; }
     finally {
       syncing = false;
+      if (!_firstSyncDone) { _firstSyncDone = true; _firstSyncResolve(); }
       if (resyncRequested) {
         const retryPush = resyncPushRequested;
         resyncRequested = false;
@@ -630,7 +633,7 @@
   }
   migrate();
   mirrorLegacyProgress();
-  global.IELTI = { KEY, get: () => model, save, merge, summary, wordId, migrateClassWords, getDeck, isLongMastered, reviewCard, setRoadmap, setMastered, setFamiliar, setFamiliarList, replaceDeck, getPhonics, setPhonics, recordStudySeconds, recordCourseVideo, backfillCourseDurations, recordActivity, media: { resolve: resolveMediaUrl, nasBaseUrl: NAS_BASE_URL, nasHttpsBaseUrl: NAS_HTTPS_BASE_URL }, backup: { keys: [...BACKUP_KEYS], export: exportBackup, import: importBackup }, motion, speech: { speak: speakEnglish, pickVoice: pickEnglishVoice }, sync: { enabled: CLOUD_SYNC_ENABLED, url: SYNC_URL, run: autoSync, schedulePush: scheduleCloudPush } };
+  global.IELTI = { KEY, get: () => model, save, merge, summary, wordId, migrateClassWords, getDeck, isLongMastered, reviewCard, setRoadmap, setMastered, setFamiliar, setFamiliarList, replaceDeck, getPhonics, setPhonics, recordStudySeconds, recordCourseVideo, backfillCourseDurations, recordActivity, media: { resolve: resolveMediaUrl, nasBaseUrl: NAS_BASE_URL, nasHttpsBaseUrl: NAS_HTTPS_BASE_URL }, backup: { keys: [...BACKUP_KEYS], export: exportBackup, import: importBackup }, motion, speech: { speak: speakEnglish, pickVoice: pickEnglishVoice }, sync: { enabled: CLOUD_SYNC_ENABLED, url: SYNC_URL, run: autoSync, schedulePush: scheduleCloudPush, waitForFirstSync: () => Promise.race([_firstSyncPromise, new Promise(r => setTimeout(r, 4000))]) } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', installChrome); else installChrome();
   global.addEventListener('ielti-progress', scheduleCloudPush);
   if (CLOUD_SYNC_ENABLED) {
