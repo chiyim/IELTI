@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.png" type="image/png"><link rel="apple-touch-icon" href="icon.png">
+  <title>IELTI · 121 个字母组合</title>
+  <script>document.documentElement.classList.add('ielti-booting');try{var m=localStorage.getItem('ielti_display_mode_v1')||localStorage.getItem('ielti_theme_v1')||(new Date().getHours()>=19||new Date().getHours()<7?'dark':'light');if(['light','dark','eink'].indexOf(m)>-1){document.documentElement.dataset.display=m;document.documentElement.dataset.theme=m==='dark'?'dark':'light';document.documentElement.classList.toggle('eink-mode',m==='eink');}}catch(e){}setTimeout(()=>document.documentElement.classList.remove('ielti-booting'),1200);</script>
+  <style>
+    :root{--accent:#0a84ff;--violet:#6659e8;--warm:#ff9f0a;--success:#30a46c}
+    *{box-sizing:border-box}body{margin:0}.phonics-app{max-width:1080px;margin:auto;padding:1.75rem 1.25rem 7rem}
+    .phonics-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin:0;padding:.25rem .25rem .65rem}.eyebrow{color:var(--apple-blue);font-size:.76rem;font-weight:800;letter-spacing:.14em}.phonics-head h1{margin:.3rem 0 .45rem;font-size:clamp(2.4rem,6vw,4.2rem);line-height:1;font-weight:760;letter-spacing:-.045em}.head-meta{color:var(--apple-secondary);font-weight:650;text-align:right}
+    .hero{padding:16px 20px;border:1px solid var(--apple-line);border-radius:24px;background:linear-gradient(135deg,color-mix(in srgb,var(--apple-blue) 5%,var(--apple-surface)),var(--apple-surface) 56%,color-mix(in srgb,var(--violet) 4%,var(--apple-surface)));box-shadow:0 12px 30px rgba(0,0,0,.045);display:grid;grid-template-columns:1fr auto;column-gap:.8rem;row-gap:2px;align-items:start}.hero h2{grid-column:1;grid-row:1;margin:0;color:var(--apple-ink);font-size:clamp(1.18rem,2.2vw,1.48rem);line-height:1.15;letter-spacing:-.025em}.hero p{grid-column:1;grid-row:2;margin:0;max-width:550px;color:var(--apple-secondary);font-size:.88rem;line-height:1.55}.hero-actions{grid-column:2;grid-row:1;align-self:start;display:flex;flex-wrap:wrap;gap:8px}.hero-btn,.mode-btn,.chip,.sound-btn,.review-action,.quiz-choice{appearance:none;border:0;font:inherit;cursor:pointer}.hero-btn{padding:8px 13px;border:1px solid color-mix(in srgb,var(--apple-blue) 22%,var(--apple-line));border-radius:999px;background:var(--apple-solid);color:var(--apple-blue);font-size:.8rem;font-weight:800;box-shadow:0 5px 13px rgba(0,0,0,.05);white-space:nowrap}.hero-btn.secondary{background:transparent;color:var(--apple-secondary);border-color:var(--apple-line);box-shadow:none}.hero-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0 0}.hero-stat{padding:16px 18px;border:1px solid var(--apple-line);border-radius:18px;background:color-mix(in srgb,var(--apple-solid) 86%,transparent)}.hero-stat b{display:block;color:var(--apple-ink);font-size:1.72rem;line-height:1;font-weight:820;letter-spacing:-.035em}.hero-stat span{display:block;margin-top:7px;color:var(--apple-secondary);font-size:.82rem;font-weight:680;white-space:nowrap}
+    .top-tools{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:24px 0 18px}.mode-bar{display:flex;gap:8px;margin:0;padding:5px;border:1px solid var(--apple-line);border-radius:999px;background:var(--apple-surface);width:max-content;max-width:100%;overflow:auto}.mode-btn{min-width:92px;padding:10px 18px;border-radius:999px;background:transparent;color:var(--apple-secondary);font-weight:750;white-space:nowrap}.mode-btn.active{background:var(--apple-blue);color:#fff;box-shadow:0 6px 16px color-mix(in srgb,var(--apple-blue) 28%,transparent)}
+    .panel{display:none}.panel.active{display:block}.filters{display:flex;justify-content:flex-end;gap:8px;overflow:auto;padding:0}.chip{padding:9px 14px;border:1px solid var(--apple-line);border-radius:999px;background:var(--apple-solid);color:var(--apple-secondary);font-weight:700;white-space:nowrap}.chip.active{background:color-mix(in srgb,var(--apple-blue) 12%,var(--apple-solid));border-color:color-mix(in srgb,var(--apple-blue) 34%,var(--apple-line));color:var(--apple-blue)}
+    .sound-section{margin:0 0 24px}.sound-title{display:flex;align-items:baseline;gap:10px;margin:0 0 10px}.sound-title b{font-size:1.45rem}.sound-title span{color:var(--apple-secondary);font-size:.84rem}.ipa-sound-btn{display:inline-flex;align-items:center;gap:.3rem;padding:.34rem .58rem;border:1px solid color-mix(in srgb,var(--apple-blue) 24%,var(--apple-line));border-radius:999px;background:color-mix(in srgb,var(--apple-blue) 8%,var(--apple-solid));color:var(--apple-blue);font:inherit;font-size:.72rem;font-weight:780;cursor:pointer;transition:background .2s ease,transform .2s ease}.ipa-sound-btn.is-playing{background:var(--apple-blue);color:#fff;transform:scale(.97)}.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.phonics-card{position:relative;min-height:150px;padding:19px;border:1px solid var(--apple-line);border-radius:24px;background:var(--apple-surface);box-shadow:0 12px 34px rgba(0,0,0,.055);backdrop-filter:blur(20px)}.grapheme{font-size:2rem;font-weight:840;letter-spacing:-.035em}.ipa{margin-left:8px;color:var(--apple-blue);font-size:.9rem;font-weight:750}.example{margin-top:14px;font-size:1.05rem;font-weight:750}.example small{display:block;margin-top:3px;color:var(--apple-secondary);font-size:.76rem;font-weight:600}.sound-btn{position:absolute;top:15px;right:15px;width:40px;height:40px;border-radius:50%;background:color-mix(in srgb,var(--apple-blue) 11%,var(--apple-solid));color:var(--apple-blue);font-size:1.05rem}.learn-toggle{position:absolute;right:15px;bottom:15px;width:28px;height:28px;border:1px solid var(--apple-line);border-radius:50%;background:var(--apple-solid);color:transparent}.learn-toggle.done{background:var(--success);border-color:var(--success);color:#fff}.learn-toggle.done:after{content:"✓";font-weight:850}
+    .study-shell{display:grid;place-items:center;min-height:420px}.study-card{width:min(620px,100%);padding:clamp(26px,5vw,48px);text-align:center;border:1px solid var(--apple-line);border-radius:32px;background:linear-gradient(145deg,color-mix(in srgb,var(--apple-blue) 7%,var(--apple-surface)),var(--apple-surface));box-shadow:var(--apple-shadow)}.study-step{color:var(--apple-secondary);font-size:.78rem;font-weight:750}.study-grapheme{margin:18px 0 4px;font-size:clamp(4rem,16vw,7rem);font-weight:850;line-height:1}.study-ipa{color:var(--apple-blue);font-size:1.35rem;font-weight:750}.study-example{margin:22px 0 5px;font-size:1.35rem;font-weight:780}.study-meaning{color:var(--apple-secondary)}.review-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:26px}.review-action{padding:12px 8px;border-radius:15px;background:var(--apple-solid);color:var(--apple-ink);border:1px solid var(--apple-line);font-weight:750}.review-action.good{background:var(--success);border-color:var(--success);color:#fff}
+    .quiz-box{width:min(720px,100%);margin:auto;padding:clamp(24px,5vw,42px);border:1px solid var(--apple-line);border-radius:30px;background:var(--apple-surface);box-shadow:var(--apple-shadow);text-align:center}.quiz-prompt{color:var(--apple-secondary);font-weight:700}.quiz-word{margin:16px 0 6px;font-size:clamp(2.5rem,8vw,4.5rem);font-weight:840}.quiz-choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:26px}.quiz-choice{padding:15px;border-radius:16px;background:var(--apple-solid);border:1px solid var(--apple-line);color:var(--apple-ink);font-weight:800}.quiz-choice.correct{background:var(--success);border-color:var(--success);color:#fff}.quiz-choice.wrong{background:#ff453a;border-color:#ff453a;color:#fff}.quiz-feedback{min-height:26px;margin-top:16px;font-weight:750}.next-quiz{margin-top:8px}.empty{padding:50px 20px;text-align:center;color:var(--apple-secondary)}
+    .hero-btn:active,.mode-btn:active,.chip:active,.sound-btn:active,.review-action:active,.quiz-choice:active,.learn-toggle:active{transform:scale(.97);transition:transform 100ms ease-out}
+    @media(max-width:900px){.cards{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media(max-width:820px){.hero-stats{grid-template-columns:repeat(4,1fr)}}
+    @media(max-width:600px){.phonics-app{padding:.75rem .75rem 6rem}.phonics-head{align-items:flex-end;flex-direction:row;gap:.45rem;margin:0 0 .55rem;padding:0 .15rem .4rem}.phonics-head h1{font-size:clamp(1.68rem,7.2vw,1.86rem);line-height:1.06}.eyebrow{margin:0 0 .22rem;font-size:.66rem;line-height:1.2}.head-meta{display:none}.hero{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 12px;border-radius:20px}.hero h2{margin:0;font-size:1rem;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hero p{display:none}.hero-actions{display:flex;flex:none;gap:6px;margin-top:0}.hero-btn{padding:7px 10px;font-size:.72rem}.hero-stats{gap:6px}.hero-stat{padding:8px 6px;border-radius:13px;text-align:center}.hero-stat b{font-size:1.14rem}.hero-stat span{font-size:.62rem;letter-spacing:-.02em}.top-tools{align-items:flex-start;flex-direction:column;margin:15px 0 13px;gap:9px}.mode-bar{width:100%}.mode-btn{flex:1;min-width:0;padding:9px 8px}.filters{width:100%;justify-content:flex-start}.chip{padding:8px 12px;font-size:.8rem}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.quiz-choices{grid-template-columns:1fr}.review-actions{grid-template-columns:1fr}.phonics-card{min-height:138px}}
+    @media(prefers-reduced-motion:no-preference){.panel.active{animation:panel-in .28s cubic-bezier(.2,.8,.2,1) both}@keyframes panel-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}}
+    @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition-duration:.01ms!important}}
+    @media(prefers-reduced-transparency:reduce){.phonics-card,.study-card,.quiz-box,.mode-bar,.hero,.hero-stat{background:var(--apple-solid);backdrop-filter:none}}
+    @media(prefers-contrast:more){.phonics-card,.study-card,.quiz-box,.mode-bar,.hero,.hero-stat,.chip,.review-action,.quiz-choice{border-color:currentColor}}
+  </style>
+<link rel="stylesheet" href="apple-ui.css?v=20260805-37">
+  <link rel="stylesheet" href="eink-ui.css?v=20260728-5">
+</head>
+<body class="apple-ui page-phonics">
+  <main class="phonics-app">
+    <header class="phonics-head"><div><div class="eyebrow">IELTI SOUND LAB</div><h1>121 个字母组合</h1><div class="head-meta">把 121 种常见拼写方式按 44 个主要发音整理</div></div></header>
+    <section class="hero"><h2>先听声音，再看拼写</h2><p>每天学一小组，听、读、认、测四步完成，不再孤立地背字母。</p><div class="hero-actions"><button class="hero-btn secondary" data-mode-target="study">继续学习</button><button class="hero-btn secondary" data-mode-target="quiz">开始测验</button></div></section>
+    <section class="hero-stats" aria-label="学习统计"><div class="hero-stat"><b id="learnedCount">0</b><span>已学组合</span></div><div class="hero-stat"><b>121</b><span>全部组合</span></div><div class="hero-stat"><b id="soundCount">44</b><span>主要发音</span></div><div class="hero-stat"><b id="quizScore">0%</b><span>测验正确率</span></div></section>
+    <div class="top-tools"><nav class="mode-bar" aria-label="学习模式"><button class="mode-btn active" data-mode="browse">浏览</button><button class="mode-btn" data-mode="study">学习</button><button class="mode-btn" data-mode="review">复习</button><button class="mode-btn" data-mode="quiz">测验</button></nav><div class="filters" id="filters"></div></div>
+    <section class="panel active" id="browsePanel"><div id="library"></div></section>
+    <section class="panel" id="studyPanel"><div class="study-shell" id="studyShell"></div></section>
+    <section class="panel" id="reviewPanel"><div class="study-shell" id="reviewShell"></div></section>
+    <section class="panel" id="quizPanel"><div class="quiz-box" id="quizBox"></div></section>
+  </main>
+<script src="ielti-config.js?v=20260728-5"></script><script src="ielti-core.js?v=20260805-38"></script>
+  <script>
+  const rawGroups=[
+    ['元音','/iː/','长衣音','e|he|他;ee|see|看见;ea|eat|吃;ie|field|田野'],
+    ['元音','/ɪ/','短衣音','i|sit|坐;y|gym|健身房;e|pretty|漂亮的'],
+    ['元音','/e/','短诶音','e|pen|钢笔;ea|head|头;ai|said|说'],
+    ['元音','/æ/','大嘴音','a|cat|猫;ai|plaid|格子呢'],
+    ['元音','/ʌ/','短啊音','u|sun|太阳;o|love|爱;ou|young|年轻的'],
+    ['元音','/ɑː/','长啊音','ar|car|汽车;a|father|父亲;al|calm|平静的'],
+    ['元音','/ɒ/','短喔音','o|hot|热的;a|watch|观看'],
+    ['元音','/ɔː/','长喔音','or|fork|叉子;aw|saw|看见;au|autumn|秋天;ough|thought|想'],
+    ['元音','/ʊ/','短乌音','oo|book|书;u|put|放'],
+    ['元音','/uː/','长乌音','oo|moon|月亮;u_e|rule|规则;ue|blue|蓝色;ew|new|新的'],
+    ['元音','/ɜː/','卷舌长音','er|her|她;ir|bird|鸟;ur|turn|转动;ear|learn|学习'],
+    ['元音','/ə/','弱读音','a|about|关于;e|problem|问题;er|teacher|老师;ou|famous|著名的'],
+    ['元音','/eɪ/','诶音','a_e|name|名字;ai|rain|雨;ay|day|白天;eigh|eight|八;ey|they|他们'],
+    ['元音','/aɪ/','爱音','i_e|time|时间;igh|night|夜晚;y|my|我的;ie|pie|馅饼'],
+    ['元音','/ɔɪ/','奥衣音','oi|coin|硬币;oy|boy|男孩'],
+    ['元音','/əʊ/','欧音','o_e|home|家;oa|boat|船;ow|snow|雪;o|open|打开'],
+    ['元音','/aʊ/','奥音','ou|house|房子;ow|cow|奶牛'],
+    ['元音','/ɪə/','衣儿音','ear|near|靠近;eer|deer|鹿;ere|here|这里'],
+    ['元音','/eə/','诶儿音','air|chair|椅子;are|care|关心;ear|bear|熊'],
+    ['辅音','/p/','轻泼音','p|pen|钢笔;pp|happy|快乐的'],
+    ['辅音','/b/','浊波音','b|book|书;bb|rabbit|兔子'],
+    ['辅音','/t/','轻特音','t|tea|茶;tt|letter|信;ed|looked|看过'],
+    ['辅音','/d/','浊德音','d|dog|狗;dd|add|添加'],
+    ['辅音','/k/','轻克音','c|cat|猫;k|kite|风筝;ck|back|后面;ch|school|学校'],
+    ['辅音','/g/','浊哥音','g|go|去;gg|egg|鸡蛋'],
+    ['辅音','/f/','轻夫音','f|fish|鱼;ff|coffee|咖啡;ph|phone|电话'],
+    ['辅音','/v/','浊夫音','v|van|货车;ve|give|给'],
+    ['辅音','/θ/','咬舌轻音','th|think|思考'],
+    ['辅音','/ð/','咬舌浊音','th|this|这个'],
+    ['辅音','/s/','丝音','s|sun|太阳;ss|class|班级;c|city|城市'],
+    ['辅音','/z/','兹音','z|zoo|动物园;zz|buzz|嗡嗡声;s|rose|玫瑰'],
+    ['辅音','/ʃ/','嘘音','sh|ship|船;ch|machine|机器;ti|nation|国家;ci|special|特别的'],
+    ['辅音','/ʒ/','日音','s|vision|视力;si|decision|决定'],
+    ['辅音','/h/','哈气音','h|hat|帽子;wh|who|谁'],
+    ['辅音','/tʃ/','吃音','ch|chair|椅子;tch|watch|手表;tu|picture|图片'],
+    ['辅音','/dʒ/','知音','j|job|工作;g|giant|巨人;dge|bridge|桥'],
+    ['辅音','/m/','姆音','m|man|男人;mm|summer|夏天'],
+    ['辅音','/n/','呢音','n|nose|鼻子;nn|dinner|晚餐;kn|know|知道'],
+    ['辅音','/ŋ/','后鼻音','ng|sing|唱;n|bank|银行'],
+    ['辅音','/l/','勒音','l|leg|腿;ll|bell|铃'],
+    ['辅音','/r/','若音','r|red|红色;rr|sorry|抱歉;wr|write|写'],
+    ['辅音','/w/','我音','w|we|我们;wh|what|什么'],
+    ['辅音','/j/','耶音','y|yes|是;u|music|音乐'],
+    ['辅音','/kw/','夸音','qu|queen|女王;q|Iraq|伊拉克']
+  ];
+  const groups=rawGroups.map(([type,ipa,label,items])=>({type,ipa,label,items:items.split(';').map((row,index)=>{const [grapheme,word,zh]=row.split('|');return{id:`${ipa}-${grapheme}-${index}`,grapheme,word,zh,ipa}})}));
+  const all=groups.flatMap(group=>group.items),IPA_AUDIO_BASE='https://phoneme.app/audio/',IPA_AUDIO={
+    '/iː/':['pi-ee.m4a'],'/ɪ/':['pi-ih.m4a'],'/e/':['pi-eh.m4a'],'/æ/':['pi-aa.m4a'],'/ʌ/':['pi-uh.m4a'],'/ɑː/':['pi-ah.m4a'],'/ɒ/':['pi-ah.m4a'],'/ɔː/':['pi-oh.m4a'],'/ʊ/':['pi-oo-short.m4a'],'/uː/':['pi-oo.m4a'],'/ɜː/':['pi-er.m4a'],'/ə/':['pi-uh.m4a'],
+    '/eɪ/':['pi-ay.m4a'],'/aɪ/':['pi-eye.m4a'],'/ɔɪ/':['pi-oy.m4a'],'/əʊ/':['pi-oh.m4a'],'/aʊ/':['pi-ow.m4a'],'/ɪə/':['https://www.abelard.org/sounds/I_schwa.mp3'],'/eə/':['https://www.abelard.org/sounds/e_schwa.mp3'],
+    '/p/':['pi-p.m4a'],'/b/':['pi-b.m4a'],'/t/':['pi-t.m4a'],'/d/':['pi-d.m4a'],'/k/':['pi-k.m4a'],'/g/':['pi-g.m4a'],'/f/':['pi-f.m4a'],'/v/':['pi-v.m4a'],'/θ/':['pi-th.m4a'],'/ð/':['pi-dh.m4a'],'/s/':['pi-s.m4a'],'/z/':['pi-z.m4a'],'/ʃ/':['pi-sh.m4a'],'/ʒ/':['pi-zh.m4a'],'/h/':['pi-h.m4a'],'/tʃ/':['pi-ch.m4a'],'/dʒ/':['pi-j.m4a'],'/m/':['pi-m.m4a'],'/n/':['pi-n.m4a'],'/ŋ/':['pi-ng.m4a'],'/l/':['pi-l.m4a'],'/r/':['pi-r.m4a'],'/w/':['pi-w.m4a'],'/j/':['pi-y.m4a'],'/kw/':['pi-k.m4a','pi-w.m4a']
+  },STORAGE='ielti_phonics_121_v1';
+  let state;try{state=window.IELTI?IELTI.getPhonics():JSON.parse(localStorage.getItem(STORAGE))||{learned:[],reviews:[],quiz:{right:0,total:0}}}catch{state={learned:[],reviews:[],quiz:{right:0,total:0}}}
+  state.learned ||= [];state.reviews ||= [];state.quiz ||= {right:0,total:0};
+  let activeType='全部',studyIndex=0,reviewIndex=0,currentQuiz=null,activeIpaAudio=null,syncingFromCore=false;
+  const $=id=>document.getElementById(id),save=()=>{localStorage.setItem(STORAGE,JSON.stringify(state));if(window.IELTI&&!syncingFromCore)IELTI.setPhonics(state);updateStats()},speak=(text,button)=>IELTI.speech.speak(text,{element:button});
+  function applySyncedState(){if(!window.IELTI||syncingFromCore)return;const next=IELTI.getPhonics();if(JSON.stringify(next)===JSON.stringify(state))return;syncingFromCore=true;state=next;localStorage.setItem(STORAGE,JSON.stringify(state));updateStats();renderLibrary();renderReview();syncingFromCore=false}
+  function updateStats(){$('learnedCount').textContent=state.learned.length;$('quizScore').textContent=state.quiz.total?Math.round(state.quiz.right/state.quiz.total*100)+'%':'0%'}
+  function renderFilters(){const types=['全部','元音','辅音'];$('filters').innerHTML=types.map(type=>`<button class="chip ${type===activeType?'active':''}" data-type="${type}">${type}${type==='全部'?' · 44 组':''}</button>`).join('')}
+  function renderLibrary(){const visible=groups.filter(g=>activeType==='全部'||g.type===activeType);$('library').innerHTML=visible.map(group=>`<section class="sound-section"><h2 class="sound-title"><b>${group.ipa}</b><span>${group.label} · ${group.items.length} 种拼写</span><button class="ipa-sound-btn" type="button" aria-label="听 ${group.ipa} 这个音" data-ipa="${group.ipa}">听这个音</button></h2><div class="cards">${group.items.map(item=>`<article class="phonics-card"><div><span class="grapheme">${item.grapheme}</span><span class="ipa">${item.ipa}</span></div><button class="sound-btn" type="button" aria-label="播放 ${item.word}" data-speak="${item.word}"></button><div class="example">${item.word}<small>${item.zh}</small></div><button class="learn-toggle ${state.learned.includes(item.id)?'done':''}" type="button" aria-label="标记 ${item.grapheme} 已学" data-learn="${item.id}"></button></article>`).join('')}</div></section>`).join('')}
+  function cardMarkup(item,mode,index,total){return`<article class="study-card"><div class="study-step">${mode} · ${index+1} / ${total}</div><div class="study-grapheme">${item.grapheme}</div><div class="study-ipa">${item.ipa}</div><div class="study-example">${item.word}</div><div class="study-meaning">${item.zh}</div><div class="review-actions"><button class="review-action" data-speak="${item.word}">听发音</button><button class="review-action" data-rate="again">再看一次</button><button class="review-action good" data-rate="known">我记住了</button></div></article>`}
+  function renderStudy(){const item=all[studyIndex%all.length];$('studyShell').innerHTML=cardMarkup(item,'学习',studyIndex%all.length,all.length)}
+  function reviewDeck(){return state.learned.length?all.filter(item=>state.learned.includes(item.id)):all.slice(0,12)}
+  function renderReview(){const deck=reviewDeck();if(!deck.length){$('reviewShell').innerHTML='<div class="empty">先学习几个组合，再回来复习。</div>';return}reviewIndex%=deck.length;$('reviewShell').innerHTML=cardMarkup(deck[reviewIndex],'复习',reviewIndex,deck.length)}
+  function nextQuiz(){const answer=all[Math.floor(Math.random()*all.length)],pool=[answer];while(pool.length<4){const option=all[Math.floor(Math.random()*all.length)];if(!pool.some(x=>x.id===option.id)&&option.ipa!==answer.ipa)pool.push(option)}pool.sort(()=>Math.random()-.5);currentQuiz={answer,locked:false};$('quizBox').innerHTML=`<div class="quiz-prompt">哪个字母组合能拼出这个单词中的 <b>${answer.ipa}</b>？</div><div class="quiz-word">${answer.word}</div><button class="sound-btn" style="position:static;margin:10px auto" data-speak="${answer.word}" aria-label="播放 ${answer.word}"></button><div class="quiz-choices">${pool.map(item=>`<button class="quiz-choice" data-answer="${item.id}">${item.grapheme}</button>`).join('')}</div><div class="quiz-feedback" id="quizFeedback" role="status" aria-live="polite">选择一个答案</div><button class="hero-btn next-quiz" data-next-quiz hidden>下一题</button>`}
+  function setMode(mode){document.querySelectorAll('.mode-btn').forEach(btn=>btn.classList.toggle('active',btn.dataset.mode===mode));document.querySelectorAll('.panel').forEach(panel=>panel.classList.remove('active'));$(`${mode}Panel`).classList.add('active');if(mode==='study')renderStudy();if(mode==='review')renderReview();if(mode==='quiz')nextQuiz()}
+  const ipaUrl=file=>file.startsWith('http')?file:IPA_AUDIO_BASE+file;
+  async function cacheIpaAudio(){if(!('caches'in window)||!navigator.onLine)return;const files=[...new Set(Object.values(IPA_AUDIO).flat())],cache=await caches.open('ielti-ipa-audio-v3');await Promise.all(files.map(async file=>{const url=ipaUrl(file);if(await cache.match(url))return;try{const response=await fetch(url,{mode:'no-cors'});if(response.ok||response.type==='opaque')await cache.put(url,response)}catch{}}))}
+  function playIpa(ipa,button){if(activeIpaAudio){activeIpaAudio.pause();activeIpaAudio=null}const files=IPA_AUDIO[ipa]||[],playAt=index=>{if(index>=files.length){button.classList.remove('is-playing');activeIpaAudio=null;return}const audio=new Audio(ipaUrl(files[index]));activeIpaAudio=audio;button.classList.add('is-playing');audio.addEventListener('ended',()=>playAt(index+1),{once:true});audio.addEventListener('error',()=>{button.classList.remove('is-playing');activeIpaAudio=null},{once:true});audio.play().catch(()=>{button.classList.remove('is-playing');activeIpaAudio=null})};playAt(0)}
+  document.addEventListener('click',event=>{const mode=event.target.closest('[data-mode],[data-mode-target]');if(mode){setMode(mode.dataset.mode||mode.dataset.modeTarget);return}if(event.target.closest('[data-next-quiz]')){nextQuiz();return}const filter=event.target.closest('[data-type]');if(filter){activeType=filter.dataset.type;renderFilters();renderLibrary();return}const ipaAudio=event.target.closest('[data-ipa]');if(ipaAudio){playIpa(ipaAudio.dataset.ipa,ipaAudio);return}const audio=event.target.closest('[data-speak]');if(audio){speak(audio.dataset.speak,audio);return}const learn=event.target.closest('[data-learn]');if(learn){const id=learn.dataset.learn;state.learned=state.learned.includes(id)?state.learned.filter(x=>x!==id):[...state.learned,id];save();learn.classList.toggle('done');return}const rate=event.target.closest('[data-rate]');if(rate){const panel=rate.closest('.panel').id;if(panel==='studyPanel'){const item=all[studyIndex%all.length];if(rate.dataset.rate==='known'&&!state.learned.includes(item.id))state.learned.push(item.id);studyIndex++;save();renderStudy()}else{reviewIndex++;renderReview()}return}const choice=event.target.closest('[data-answer]');if(choice&&!currentQuiz.locked){currentQuiz.locked=true;state.quiz.total++;const right=choice.dataset.answer===currentQuiz.answer.id;if(right){state.quiz.right++;choice.classList.add('correct');$('quizFeedback').textContent='答对了！'}else{choice.classList.add('wrong');document.querySelector(`[data-answer="${currentQuiz.answer.id}"]`).classList.add('correct');$('quizFeedback').textContent=`正确答案是 ${currentQuiz.answer.grapheme}`};document.querySelector('[data-next-quiz]').hidden=false;save()}});
+  window.addEventListener('ielti-progress',applySyncedState);
+  renderFilters();renderLibrary();renderStudy();renderReview();nextQuiz();updateStats();cacheIpaAudio();
+  if(all.length!==121)console.warn('Expected 121 graphemes, got',all.length);
+  </script>
+</body>
+</html>

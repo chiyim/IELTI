@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.png" type="image/png"><link rel="apple-touch-icon" href="icon.png">
+<title>雅思词汇 · 分类记忆法</title>
+<script>document.documentElement.classList.add('ielti-booting');try{var m=localStorage.getItem('ielti_display_mode_v1');if(['light','dark','eink'].indexOf(m)<0)m=(new Date().getHours()>=19||new Date().getHours()<7?'dark':'light');document.documentElement.dataset.display=m;document.documentElement.dataset.theme=m==='dark'?'dark':'light';document.documentElement.classList.toggle('light',m==='light');document.documentElement.classList.toggle('eink-mode',m==='eink');}catch(e){}setTimeout(()=>document.documentElement.classList.remove('ielti-booting'),1200);</script>
+<style>
+:root{
+  --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2a2f3a;
+  --txt:#e8eaed; --muted:#9aa3b2; --en:#7cc4ff; --pos:#c08bff; --zh:#e8eaed;
+  --accent:#4f9dff; --accent2:#2ecc8f; --known:#3a4250; --chip:#222733;
+}
+.light{
+  --bg:#f4f6fa; --panel:#ffffff; --panel2:#f0f3f8; --line:#e0e5ee;
+  --txt:#1b2330; --muted:#6b7480; --en:#1763c7; --pos:#7b3fe4; --zh:#1b2330;
+  --accent:#2f7fe6; --accent2:#1aa572; --known:#cfd6e2; --chip:#eef1f6;
+}
+.light .w{border-color:#b0bcc8}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",Segoe UI,sans-serif;
+  -webkit-font-smoothing:antialiased;line-height:1.5}
+header{position:sticky;top:0;z-index:20;background:var(--panel);
+  border-bottom:1px solid var(--line);padding:10px 14px}
+.htop{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+h1{font-size:17px;margin:0;font-weight:700;letter-spacing:.5px}
+.sub{color:var(--muted);font-size:12px}
+.spacer{flex:1}
+.btn{background:var(--panel2);color:var(--txt);border:1px solid var(--line);
+  padding:6px 11px;border-radius:9px;cursor:pointer;font-size:13px;transition:.15s}
+.btn:hover{border-color:var(--accent)}
+.btn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.search{flex:1;min-width:140px;background:var(--panel2);border:1px solid var(--line);
+  color:var(--txt);padding:8px 12px;border-radius:10px;font-size:14px}
+.search:focus{outline:none;border-color:var(--accent)}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px;align-items:center}
+.days{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+.day-chip{background:var(--chip);border:1px solid var(--line);color:var(--muted);
+  padding:4px 9px;border-radius:20px;cursor:pointer;font-size:12px;white-space:nowrap}
+.day-chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+header.collapsed .controls,header.collapsed .days{display:none}
+.statline{font-size:13px;color:var(--muted);padding:0 0 0 2px;margin-top:0}
+#collapseBtn{transition:transform .2s;font-size:26px;line-height:1;padding:2px 8px}
+header.collapsed #collapseBtn{transform:rotate(-90deg)}
+main{max-width:920px;margin:0 auto;padding:14px}
+.daysec{margin-bottom:.8rem}
+.day-h{font-size:17px;font-weight:700;color:var(--accent2);margin:2px 0 2px;
+  position:sticky;top:0;padding:0}
+.grp{margin:4px 0 2px}
+.grp-h{display:inline-block;font-size:15px;font-weight:600;background:var(--panel2);
+  color:var(--txt);padding:3px 10px;border-radius:7px;border-left:3px solid var(--accent)}
+.grp-cnt{color:var(--muted);font-size:11px;margin-left:6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px;margin-top:6px}
+.w{display:flex;align-items:baseline;gap:7px;background:var(--panel);
+  border:1px solid var(--line);border-radius:9px;padding:8px 11px;cursor:pointer;transition:.12s}
+.w:hover{border-color:var(--accent)}
+.w .en{color:var(--en);font-weight:600;font-size:17px}
+.w .pos{color:var(--pos);font-size:13px;font-style:italic}
+.w .zh{color:var(--zh);font-size:15px;cursor:pointer}
+.w .spk{flex:none;font-size:13px;opacity:.5;cursor:pointer;user-select:none;padding:8px 10px;margin:-8px -10px -8px 0;transition:.12s}
+.w .spk:hover{opacity:1;transform:scale(1.2)}
+.w .spk.playing{opacity:1;color:var(--accent)}
+.w-word{display:flex;flex-direction:column;gap:2px}
+.w .ipa{font-size:15px;color:var(--muted);letter-spacing:.3px;line-height:1.2}
+.w.known{opacity:.4}
+.w.known .en{text-decoration:line-through}
+/* 已熟悉和已掌握的英文单词字号缩小一号 */
+body.page-class .w.known .en,body.page-class .w.long-mastered .en{font-size:1.15rem!important}
+.hide-zh .w .zh{filter:blur(5px);user-select:none;transition:filter .15s}
+.hide-zh .w:hover .zh{filter:blur(3px)}
+.hide-en .w .en,.hide-en .w .pos,.hide-en .w .ipa{filter:blur(5px);user-select:none;transition:filter .15s}
+.hide-en .w:hover .en,.hide-en .w:hover .pos,.hide-en .w:hover .ipa{filter:blur(3px)}
+.w .zh.reveal,.w .en.reveal,.w .pos.reveal,.w .ipa.reveal{filter:none!important}
+.w.long-mastered{opacity:1!important;background:color-mix(in srgb,var(--apple-green) 6%,var(--apple-solid))!important;border:0.3px solid color-mix(in srgb,var(--apple-green) 38%,var(--apple-line))!important;box-shadow:inset 4px 0 0 var(--apple-green),0 4px 16px rgba(0,0,0,.05)!important}
+body.page-class .w.long-mastered .en,body.page-class .w.long-mastered .zh{color:#747a88!important}
+.long-mastered .mastery-state{background:color-mix(in srgb,var(--apple-green) 22%,transparent)!important;color:color-mix(in srgb,var(--apple-green) 78%,#000)!important;border:1px solid color-mix(in srgb,var(--apple-green) 34%,transparent)!important}
+.empty{color:var(--muted);text-align:center;padding:40px}
+/* flashcard */
+.fc-wrap{position:fixed;inset:0;background:rgba(8,10,14,.92);z-index:50;
+  display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+.fc-wrap.show{display:flex}
+.card{width:min(440px,92vw);height:300px;background:var(--panel);border:1px solid var(--line);
+  border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;cursor:pointer;padding:24px;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.4)}
+.card .fen{font-size:38px;font-weight:700;color:var(--en)}
+.card .fpos{font-size:15px;color:var(--pos);font-style:italic}
+.card .fzh{font-size:24px;color:var(--zh)}
+.card .ftap{font-size:12px;color:var(--muted)}
+.card .fgrp{font-size:12px;color:var(--muted);position:absolute;margin-top:-220px}
+.fc-bar{display:flex;gap:10px;margin-top:20px;align-items:center;flex-wrap:wrap;justify-content:center}
+.fc-counter{color:var(--muted);font-size:13px;min-width:80px;text-align:center}
+.fc-close{position:absolute;top:18px;right:20px;font-size:26px;color:var(--muted);
+  cursor:pointer;background:none;border:none}
+.fc-title{position:absolute;top:20px;left:20px;color:var(--muted);font-size:13px}
+.w .trl{flex:none;font-size:14px;color:var(--muted);cursor:pointer;padding:8px 4px;margin:-8px 0;user-select:none;opacity:.5;transition:.12s}
+.w .trl:hover{opacity:1;color:var(--accent2)}
+.trans-bg{position:fixed;inset:0;background:rgba(8,10,14,.6);z-index:40;display:none}
+.trans-bg.show{display:block}
+.trans-popup{position:fixed;z-index:45;background:var(--panel);border:1px solid var(--line);
+  border-radius:14px;padding:20px 22px 18px;max-width:380px;width:92vw;
+  max-height:82vh;overflow-y:auto;
+  left:50%;top:50%;transform:translate(-50%,-50%);
+  box-shadow:0 8px 40px rgba(0,0,0,.5);display:none}
+.trans-popup.show{display:block}
+.trans-close{position:absolute;top:12px;right:16px;background:none;border:none;
+  color:var(--muted);font-size:22px;cursor:pointer;line-height:1}
+.trans-en{font-size:20px;font-weight:700;color:var(--en);margin-bottom:8px;padding-right:20px}
+.trans-main{font-size:17px;color:var(--txt);margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.trans-pos{font-size:13px;color:var(--pos);margin:8px 0 3px;font-weight:600}
+.trans-terms{font-size:14px;color:var(--muted);line-height:1.6}
+.trans-loading{color:var(--muted);font-size:14px;padding:8px 0}
+.trans-divider{height:1px;background:var(--line);margin:12px 0}
+.trans-def{font-size:14px;color:var(--txt);margin:4px 0 2px;line-height:1.5}
+.trans-ex{font-size:13px;color:var(--muted);font-style:italic;margin:2px 0 6px;line-height:1.4}
+.trans-syn{font-size:13px;color:var(--muted);margin:3px 0}
+@media(max-width:900px){
+  .grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:560px){
+  .grid{grid-template-columns:1fr}
+  .w{padding:11px 13px}
+  .w .en{font-size:22px}
+  body.page-class .w.known .en,body.page-class .w.long-mastered .en{font-size:1.35rem!important}
+  .w .pos{font-size:15px}
+  .w .zh{font-size:19px}
+  .w .spk{font-size:16px}
+  h1{font-size:16px}
+}
+
+body.page-class .w .zh{font-weight:400!important}body.page-class .fc-wrap .card .fzh{font-weight:400!important}
+body.page-class main .w .en{font-weight:500!important}
+body.page-class .fc-wrap .card .fen{font-weight:600!important}</style>
+<link rel="stylesheet" href="apple-ui.css?v=20260805-37">
+  <link rel="stylesheet" href="eink-ui.css?v=20260728-14">
+<style>
+body.page-class main{padding-top:.625rem!important}
+body.page-class .day-title-row{position:sticky;top:.5rem;z-index:3;display:flex;align-items:center;gap:.65rem}
+body.page-class .day-h{position:static!important;display:flex!important;width:max-content!important;align-items:center}
+body.page-class .day-word-count{margin-left:auto;color:var(--apple-secondary);font-size:.78rem;font-weight:600;white-space:nowrap}
+@media(max-width:760px){body.page-class main{padding-top:.375rem!important}}
+</style>
+</head>
+<body class="apple-ui page-class"><header>
+  <div class="htop">
+    <div class="page-title-brand">
+      <small class="page-kicker">IELTS VOCABULARY · CATEGORY-BASED MEMORY</small>
+      <h1><span class="desktop-title">雅思词汇 · 分类记忆法</span><span class="mobile-title">词汇 · 分类记忆法</span></h1>
+      <div class="sub statline" id="stat"></div>
+    </div>
+    <span class="spacer"></span>
+    <button class="btn" id="themeBtn">☀️ 浅色</button>
+  </div>
+  <nav class="quick-tools" aria-label="常用学习工具">
+    <button class="btn" id="zhBtn">遮中文</button>
+    <button class="btn" id="enBtn">遮英文</button>
+    <button class="btn" id="knownBtn">只看未熟悉</button>
+    <button class="btn" id="fcBtn">翻卡记忆</button>
+    <button class="btn" id="collapseBtn" title="收起 / 展开菜单" aria-label="收起 / 展开菜单">▾</button>
+  </nav>
+  <div class="controls">
+    <input class="search" id="q" placeholder="🔍 搜索英文 / 中文 / 分类…">
+    <select class="category-select" id="groupFilter" aria-label="按分类筛选"><option value="">全部分类</option></select>
+    <button class="btn on" id="autoSpkBtn">🔊 自动发音</button>
+    <button class="btn" id="resetBtn">重置进度</button>
+  </div>
+  <div class="days" id="days"></div>
+</header>
+<main id="main"></main>
+<footer class="page-status-footer">
+  <div class="sub sync-state" id="syncState" role="status" aria-live="polite">正在检查运行模式…</div>
+</footer>
+
+<div class="fc-wrap" id="fc">
+  <div class="fc-title" id="fcTitle"></div>
+  <button class="fc-close" id="fcClose">×</button>
+  <div class="card" id="card"><div class="ftap">加载中…</div></div>
+  <div class="fc-bar">
+    <button class="btn" id="fcPrev">← 上一个</button>
+    <span class="fc-counter" id="fcCounter"></span>
+    <button class="btn" id="fcNext">下一个 →</button>
+  </div>
+  <div class="fc-bar">
+    <button class="btn" id="fcSpeak">🔊 发音</button>
+    <button class="btn" id="fcShuffle">🔀 打乱</button>
+    <button class="btn" id="fcKnown">✓ 标记熟悉</button>
+    <button class="btn" id="fcMode">英→中</button>
+  </div>
+</div>
+
+<div class="trans-bg" id="transBg"></div>
+<div class="trans-popup" id="transPopup">
+  <button class="trans-close" id="transClose">×</button>
+  <div id="transBody"></div>
+</div>
+
+<script src="ielti-config.js?v=20260728-8"></script><script src="ielti-core.js?v=20260805-38"></script>
+
+<script src="ielts-word-data.js"></script>
+<script>
+// ---- 发音 (Web Speech API, 离线使用系统语音) ----
+let autoSpeak=true;
+function speak(text,el){return window.IELTI?.speech.speak(text,{element:el})}
+
+const LS_FAMILIAR='wclass_familiar_v1', LS_THEME='wclass_theme_v1';
+if(window.IELTI)IELTI.migrateClassWords(DATA);
+let known = new Set(window.IELTI?Object.entries(IELTI.getDeck('class')).filter(([,card])=>card.familiar).map(([wordId])=>wordId):JSON.parse(localStorage.getItem(LS_FAMILIAR)||'[]'));
+const id = w => window.IELTI?IELTI.wordId(w):[w.day,w.group,w.en].map(value=>String(value).trim().toLowerCase()).join('|');
+
+// 进度同步由 ielti-core.js 统一管理；具体同步地址在 ielti-config.js 配置。
+function saveKnownLocal(){localStorage.setItem(LS_FAMILIAR,JSON.stringify([...known]));if(window.IELTI)IELTI.setFamiliarList('class',[...known]);}
+function persistKnown(){saveKnownLocal();}
+const LS_DAY='wclass_day_v1';
+let onlyUnknown=false;
+
+// build day list
+const days=[]; DATA.forEach(w=>{if(!days.includes(w.day))days.push(w.day)});
+let curDay=localStorage.getItem(LS_DAY)||days[0];if(curDay==='all'||!days.includes(curDay))curDay=days[0];
+const daysEl=document.getElementById('days');
+function selectDay(val){groupFilter.value='';curDay=val;localStorage.setItem(LS_DAY,val);render();[...daysEl.children].forEach(c=>c.classList.toggle('active',c.dataset.day===val));window.scrollTo(0,0)}
+function dayChip(label,val){const b=document.createElement('div');b.className='day-chip'+(val==curDay?' active':'');b.dataset.day=val;b.textContent=label;b.onclick=()=>selectDay(val);return b;}
+days.forEach(d=>daysEl.appendChild(dayChip(d,d)));
+
+const main=document.getElementById('main');
+const q=document.getElementById('q');
+const groupFilter=document.getElementById('groupFilter');
+[...new Set(DATA.map(w=>w.group))].sort((a,b)=>a.localeCompare(b,'zh-CN')).forEach(group=>groupFilter.insertAdjacentHTML('beforeend',`<option value="${group.replace(/"/g,'&quot;')}">${group}</option>`));
+function filtered(){
+  const kw=q.value.trim().toLowerCase();
+  const group=groupFilter.value;
+  return DATA.filter(w=>{
+    if(!group && w.day!==curDay) return false;
+    if(group && w.group!==group) return false;
+    if(onlyUnknown && known.has(id(w))) return false;
+    if(kw){return (w.en.toLowerCase().includes(kw)||w.zh.toLowerCase().includes(kw)||w.group.toLowerCase().includes(kw));}
+    return true;
+  });
+}
+function render(){
+  const list=filtered();
+  const longMastered=window.IELTI?Object.values(IELTI.getDeck('class')).filter(IELTI.isLongMastered).length:0;
+  document.getElementById('stat').textContent=`共 ${DATA.length} 词 · 已熟悉 ${known.size} · 长期掌握 ${longMastered}`;
+  if(!list.length){main.innerHTML='<div class="empty">没有匹配的词条 🤔</div>';return;}
+  // group by day then group
+  const byDay={};
+  list.forEach(w=>{(byDay[w.day]=byDay[w.day]||{});(byDay[w.day][w.group]=byDay[w.day][w.group]||[]).push(w);});
+  let html='';
+  for(const day of days){
+    if(!byDay[day])continue;
+    const dayIndex=days.indexOf(day);
+    const showDaySteps=!groupFilter.value;
+    const previous=showDaySteps&&dayIndex>0?`<button class="day-step" data-day="${days[dayIndex-1]}" aria-label="上一天" title="上一天">‹</button>`:'';
+    const next=showDaySteps&&dayIndex<days.length-1?`<button class="day-step" data-day="${days[dayIndex+1]}" aria-label="下一天" title="下一天">›</button>`:'';
+    const dayWordCount=Object.values(byDay[day]).reduce((total, words)=>total+words.length,0);
+    html+=`<div class="daysec"><div class="day-title-row"><div class="day-h">${previous}<span>${day}</span>${next}</div><span class="day-word-count">${dayWordCount} 个单词</span></div>`;
+    for(const g in byDay[day]){
+      const arr=byDay[day][g];
+      html+=`<div class="grp"><span class="grp-h">${g}<span class="grp-cnt">${arr.length}</span></span><div class="grid">`;
+      arr.forEach(w=>{
+        const progress=window.IELTI?IELTI.getDeck('class')[id(w)]||{}:{};
+        const isLongMastered=window.IELTI?.isLongMastered(progress);
+        const k=isLongMastered?' known long-mastered':known.has(id(w))?' known':'';
+        const stateLabel=isLongMastered?'长期掌握':known.has(id(w))?'已熟悉':'';
+        html+=`<div class="w${k}" data-id="${encodeURIComponent(id(w))}">
+          <span class="w-word"><span class="en">${w.en}</span><span class="ipa">${w.ipa||''}</span><span class="zh">${w.zh}</span></span><span class="pos">${w.pos||''}</span><span class="trl" data-en="${w.en.replace(/"/g,'&quot;')}">详</span>${stateLabel?`<span class="mastery-state">${stateLabel}</span>`:''}<span class="spk" data-en="${w.en.replace(/"/g,'&quot;')}">🔊</span></div>`;
+      });
+      html+=`</div></div>`;
+    }
+    html+=`</div>`;
+  }
+  main.innerHTML=html;
+}
+// ---- 翻译弹窗 ----
+const LS_TRANS='wclass_trans_v2';
+const transCache=(()=>{try{return JSON.parse(localStorage.getItem(LS_TRANS)||'{}')}catch{return {};}})();
+function saveTransCache(){try{localStorage.setItem(LS_TRANS,JSON.stringify(transCache));}catch{}}
+function renderTransBody(word,data){
+  let h=`<div class="trans-en">${word}</div>`;
+  if(!data||(!data.sentences&&!data.defs)){return h+'<div class="trans-loading">查询失败，请重试</div>';}
+  // 中文译义
+  const main=data.sentences?.[0]?.trans||'';
+  if(main)h+=`<div class="trans-main">${main}</div>`;
+  (data.dict||[]).forEach(d=>{
+    h+=`<div class="trans-pos">${d.pos}</div><div class="trans-terms">${(d.terms||[]).slice(0,10).join('、')}</div>`;
+  });
+  // 英文释义
+  if(data.defs?.length){
+    h+=`<div class="trans-divider"></div>`;
+    data.defs.forEach(m=>{
+      h+=`<div class="trans-pos">${m.partOfSpeech}</div>`;
+      (m.definitions||[]).forEach(def=>{
+        h+=`<div class="trans-def">${def.definition}</div>`;
+        if(def.example)h+=`<div class="trans-ex">"${def.example}"</div>`;
+      });
+      if(m.synonyms?.length)h+=`<div class="trans-syn">近义词：${m.synonyms.join(', ')}</div>`;
+      if(m.antonyms?.length)h+=`<div class="trans-syn">反义词：${m.antonyms.join(', ')}</div>`;
+    });
+  }
+  return h;
+}
+function closeTrans(){
+  document.getElementById('transPopup').classList.remove('show');
+  document.getElementById('transBg').classList.remove('show');
+}
+async function showTrans(word){
+  const popup=document.getElementById('transPopup');
+  const body=document.getElementById('transBody');
+  popup.classList.add('show');
+  document.getElementById('transBg').classList.add('show');
+  if(transCache[word]!==undefined){body.innerHTML=renderTransBody(word,transCache[word]);return;}
+  body.innerHTML=`<div class="trans-en">${word}</div><div class="trans-loading">查询中…</div>`;
+  const [gRes,dictRes]=await Promise.allSettled([
+    fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&dt=bd&dj=1&q=${encodeURIComponent(word)}`),
+    fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`)
+  ]);
+  let sentences=null,dict=null,defs=null;
+  if(gRes.status==='fulfilled'&&gRes.value.ok){const d=await gRes.value.json();sentences=d.sentences;dict=d.dict;}
+  if(dictRes.status==='fulfilled'&&dictRes.value.ok){
+    const d=await dictRes.value.json();
+    defs=(d[0]?.meanings||[]).map(m=>({
+      partOfSpeech:m.partOfSpeech,
+      definitions:(m.definitions||[]).slice(0,2).map(def=>({definition:def.definition,example:def.example||''})),
+      synonyms:[...new Set([...(m.synonyms||[]),...(m.definitions||[]).flatMap(d=>d.synonyms||[])])].slice(0,6),
+      antonyms:[...new Set([...(m.antonyms||[]),...(m.definitions||[]).flatMap(d=>d.antonyms||[])])].slice(0,4)
+    }));
+  }
+  const data={sentences,dict,defs};
+  transCache[word]=data;
+  saveTransCache();
+  body.innerHTML=renderTransBody(word,data);
+}
+document.getElementById('transClose').onclick=closeTrans;
+document.getElementById('transBg').onclick=closeTrans;
+
+main.addEventListener('click',e=>{
+  const dayStep=e.target.closest('.day-step');
+  if(dayStep){selectDay(dayStep.dataset.day);return;}
+  const sp=e.target.closest('.spk');
+  if(sp){speak(sp.dataset.en,sp);return;}
+  const trl=e.target.closest('.trl');
+  if(trl){showTrans(trl.dataset.en);return;}
+  const zh=e.target.closest('.zh');
+  if(zh){
+    const card=zh.closest('.w');
+    if(document.body.classList.contains('hide-zh')||document.body.classList.contains('hide-en')){
+      const hidden=card.querySelector('.zh:not(.reveal),.en:not(.reveal)');
+      if(hidden){card.querySelectorAll('.zh,.en,.pos,.ipa').forEach(s=>s.classList.add('reveal'));return;}
+    }
+    const spk=card.querySelector('.spk');
+    if(spk){speak(spk.dataset.en,spk);return;}
+  }
+  const el=e.target.closest('.w'); if(!el)return;
+  // if in mask mode, first click reveals just this card
+  if(document.body.classList.contains('hide-zh')||document.body.classList.contains('hide-en')){
+    const hidden=el.querySelector('.zh:not(.reveal),.en:not(.reveal)');
+    if(hidden){el.querySelectorAll('.zh,.en,.pos,.ipa').forEach(s=>s.classList.add('reveal'));return;}
+  }
+  const i=decodeURIComponent(el.dataset.id);
+  if(known.has(i))known.delete(i);else known.add(i);
+  el.classList.toggle('known');
+  persistKnown();
+  const longMastered=window.IELTI?Object.values(IELTI.getDeck('class')).filter(IELTI.isLongMastered).length:0;
+  document.getElementById('stat').textContent=`共 ${DATA.length} 词 · 已熟悉 ${known.size} · 长期掌握 ${longMastered}`;
+});
+q.addEventListener('input',render);
+groupFilter.addEventListener('change',()=>{if(groupFilter.value){[...daysEl.children].forEach(chip=>chip.classList.remove('active'));}render();});
+
+function tgl(btnId,cls,after){const b=document.getElementById(btnId);b.onclick=()=>{const on=document.body.classList.toggle(cls);b.classList.toggle('on',on);if(after)after(on);};}
+tgl('zhBtn','hide-zh',()=>document.querySelectorAll('.reveal').forEach(s=>s.classList.remove('reveal')));
+tgl('enBtn','hide-en',()=>document.querySelectorAll('.reveal').forEach(s=>s.classList.remove('reveal')));
+document.getElementById('knownBtn').onclick=function(){onlyUnknown=!onlyUnknown;this.classList.toggle('on',onlyUnknown);render();};
+document.getElementById('resetBtn').onclick=()=>{if(confirm('确定清空“已熟悉”标记？长期掌握和复习记录不会删除。')){known.clear();localStorage.removeItem(LS_FAMILIAR);if(window.IELTI)IELTI.setFamiliarList('class',[]);render();}};
+window.addEventListener('ielti-progress',()=>{known=new Set(Object.entries(IELTI.getDeck('class')).filter(([,card])=>card.familiar).map(([wordId])=>wordId));localStorage.setItem(LS_FAMILIAR,JSON.stringify([...known]));render()});
+document.getElementById('autoSpkBtn').onclick=function(){autoSpeak=!autoSpeak;this.classList.toggle('on',autoSpeak);if(!autoSpeak)speechSynthesis.cancel();};
+
+// display mode
+const DISPLAY_KEY='ielti_display_mode_v1';
+const DISPLAY_MODES=['light','dark','eink'];
+const PREF_MODES=['auto','light','dark','eink'];
+const timeBasedDisplay=()=>{const h=new Date().getHours();return(h>=19||h<7)?'dark':'light';};
+const THEME_ICON={auto:'<circle cx="12" cy="12" r="8"/><path d="M12 4v16A8 8 0 0 0 12 4z" fill="currentColor" stroke="none"/>',light:'<circle cx="12" cy="12" r="4"/><line x1="12" y1="3" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21"/><line x1="3" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21" y2="12"/><line x1="5.64" y1="5.64" x2="7.05" y2="7.05"/><line x1="16.95" y1="16.95" x2="18.36" y2="18.36"/><line x1="5.64" y1="18.36" x2="7.05" y2="16.95"/><line x1="16.95" y1="7.05" x2="18.36" y2="5.64"/>',dark:'<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',eink:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h4"/>'};
+const themeIconSvg=key=>`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block;margin:0 auto">${THEME_ICON[key]}</svg>`;
+function normalizeDisplayMode(t){return DISPLAY_MODES.includes(t)?t:'light';}
+function resolveTheme(){
+  const pref=localStorage.getItem(DISPLAY_KEY);
+  if(pref==='light'||pref==='dark'||pref==='eink')return pref;
+  return timeBasedDisplay();
+}
+function applyTheme(t){
+  theme=normalizeDisplayMode(t);
+  document.documentElement.dataset.display=theme;
+  document.documentElement.dataset.theme=theme==='dark'?'dark':'light';
+  document.documentElement.classList.toggle('eink-mode',theme==='eink');
+  document.body.classList.toggle('light',theme!=='dark');
+  const button=document.getElementById('themeBtn');
+  const pref=localStorage.getItem(DISPLAY_KEY)||'auto';
+  if(theme==='eink'){
+    button.textContent='墨';
+  }else{
+    const iconKey=pref==='auto'?'auto':theme;
+    button.innerHTML=themeIconSvg(iconKey);
+  }
+  if(pref==='auto'){
+    button.setAttribute('aria-label',`自动 · ${theme==='dark'?'深色':theme==='eink'?'墨水屏':'浅色'} · 点击切换`);
+  }else{
+    button.setAttribute('aria-label',`当前：${theme==='eink'?'墨水屏':theme==='light'?'浅色':'深色'} · 点击切换显示模式`);
+  }
+  button.title=button.getAttribute('aria-label');
+}
+let theme=resolveTheme();applyTheme(theme);
+// 顶部菜单收起/展开
+const LS_COLLAPSE='wclass_collapse_v1';
+const headerEl=document.querySelector('header');
+function applyCollapse(c){headerEl.classList.toggle('collapsed',c);document.getElementById('collapseBtn').textContent=c?'▸':'▾';}
+applyCollapse(localStorage.getItem(LS_COLLAPSE)!=='0');
+document.getElementById('collapseBtn').onclick=()=>{const c=!headerEl.classList.contains('collapsed');applyCollapse(c);localStorage.setItem(LS_COLLAPSE,c?'1':'0');};
+document.getElementById('themeBtn').onclick=()=>{
+  const currentPref=localStorage.getItem(DISPLAY_KEY)||'auto';
+  const idx=PREF_MODES.indexOf(currentPref);
+  const nextPref=PREF_MODES[(idx+1)%PREF_MODES.length];
+  if(nextPref==='auto'){
+    localStorage.setItem(DISPLAY_KEY,'auto');
+    localStorage.removeItem('ielti_theme_v1');
+    theme=timeBasedDisplay();
+  }else{
+    localStorage.setItem(DISPLAY_KEY,nextPref);
+    localStorage.setItem('ielti_theme_v1',nextPref==='eink'?'light':nextPref);
+    theme=nextPref;
+  }
+  localStorage.setItem(LS_THEME,theme);
+  applyTheme(theme);
+};
+
+// flashcards
+let deck=[],fi=0,flipped=false,fcMode='en2zh';
+const fc=document.getElementById('fc'),card=document.getElementById('card');
+function openFC(){deck=filtered().slice();if(!deck.length){alert('当前没有可练习的词');return;}fi=0;flipped=false;fc.classList.add('show');document.getElementById('fcTitle').textContent=curDay+(onlyUnknown?' · 未熟悉':'');drawCard();}
+function drawCard(){
+  const w=deck[fi];flipped=false;
+  document.getElementById('fcCounter').textContent=`${fi+1} / ${deck.length}`;
+  const front = fcMode==='en2zh' ? `<div class="fen">${w.en}</div><div class="fpos">${w.pos||''}</div>` : `<div class="fzh">${w.zh}</div>`;
+  card.innerHTML=`<div class="fgrp">${w.day} · ${w.group}</div>${front}<div class="ftap">点击翻面</div>`;
+  if(autoSpeak && fcMode==='en2zh') speak(w.en);
+}
+function flip(){const w=deck[fi];flipped=!flipped;
+  if(flipped){const back= fcMode==='en2zh' ? `<div class="fzh">${w.zh}</div>` : `<div class="fen">${w.en}</div><div class="fpos">${w.pos||''}</div>`;
+    card.innerHTML=`<div class="fgrp">${w.day} · ${w.group}</div>${back}<div class="ftap">点击翻面</div>`;
+    if(autoSpeak && fcMode==='zh2en') speak(w.en);
+  }else drawCard();
+}
+card.onclick=()=>window.IELTI?IELTI.motion.flip(card,flip):flip();
+document.getElementById('fcBtn').onclick=openFC;
+document.getElementById('fcClose').onclick=()=>{fc.classList.remove('show');render();};
+document.getElementById('fcNext').onclick=()=>{fi=(fi+1)%deck.length;drawCard();};
+document.getElementById('fcPrev').onclick=()=>{fi=(fi-1+deck.length)%deck.length;drawCard();};
+document.getElementById('fcSpeak').onclick=()=>speak(deck[fi].en);
+document.getElementById('fcShuffle').onclick=()=>{for(let i=deck.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[deck[i],deck[j]]=[deck[j],deck[i]];}fi=0;drawCard();};
+document.getElementById('fcKnown').onclick=()=>{known.add(id(deck[fi]));persistKnown();if(fi<deck.length-1){fi++;drawCard();}else drawCard();};
+document.getElementById('fcMode').onclick=function(){fcMode=fcMode==='en2zh'?'zh2en':'en2zh';this.textContent=fcMode==='en2zh'?'英→中':'中→英';drawCard();};
+document.addEventListener('keydown',e=>{if(!fc.classList.contains('show'))return;
+  if(e.key==='ArrowRight')document.getElementById('fcNext').click();
+  else if(e.key==='ArrowLeft')document.getElementById('fcPrev').click();
+  else if(e.key===' '){e.preventDefault();flip();}
+  else if(e.key==='Escape')document.getElementById('fcClose').click();
+  else if(e.key==='p'||e.key==='P')speak(deck[fi].en);});
+
+render();
+
+</script>
+</body>
+</html>

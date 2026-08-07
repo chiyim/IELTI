@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^awk 'NR>=62 && NR<=92\\{print NR\":\"\\$0\\}' index\\.html$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

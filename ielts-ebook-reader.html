@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f2f2f7">
+<title>IELTI · 阅读中</title>
+<script>
+document.documentElement.classList.add('ielti-booting');
+try {
+  var m = localStorage.getItem('ielti_display_mode_v1') || localStorage.getItem('ielti_theme_v1')
+    || (new Date().getHours() >= 19 || new Date().getHours() < 7 ? 'dark' : 'light');
+  if (['light', 'dark', 'eink'].indexOf(m) > -1) {
+    document.documentElement.dataset.display = m;
+    document.documentElement.dataset.theme = m === 'dark' ? 'dark' : 'light';
+    document.documentElement.classList.toggle('eink-mode', m === 'eink');
+  }
+} catch (e) {}
+setTimeout(() => document.documentElement.classList.remove('ielti-booting'), 1200);
+</script>
+<link rel="stylesheet" href="apple-ui.css?v=20260805-37">
+<link rel="stylesheet" href="eink-ui.css?v=20260804-1">
+<style>
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; box-sizing: border-box; }
+  *, *::before, *::after { box-sizing: inherit; }
+  .reader-shell { display: grid; grid-template-rows: 1fr auto; height: 100dvh; }
+  .reader-stage { overflow: hidden; background: #000; }
+  .reader-stage iframe { display: block; width: 100%; height: 100%; border: none; }
+  .reader-foot {
+    display: flex; align-items: center; justify-content: center; gap: 8rem;
+    padding: .55rem .75rem;
+    border-top: 1px solid var(--apple-line);
+    background: color-mix(in srgb, var(--apple-surface) 90%, transparent);
+    backdrop-filter: blur(22px) saturate(170%);
+    -webkit-backdrop-filter: blur(22px) saturate(170%);
+    overflow: hidden;
+  }
+  .reader-btn {
+    appearance: none; border: 1px solid var(--apple-line);
+    background: var(--apple-solid); color: var(--apple-ink);
+    border-radius: 999px; padding: .3rem .65rem;
+    font: inherit; font-size: .75rem; font-weight: 720; cursor: pointer;
+    text-decoration: none; display: inline-block; white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .reader-btn:hover { background: color-mix(in srgb, var(--apple-blue) 10%, var(--apple-solid)); }
+  @media (max-width: 760px) {
+    .reader-foot { gap: 1.5rem; padding: .45rem .4rem; }
+    .reader-btn { padding: .2rem .4rem; font-size: .66rem; }
+  }
+</style>
+</head>
+<body class="apple-ui page-reader reader-shell">
+
+<main class="reader-stage">
+  <iframe id="pdfFrame" title="PDF 阅读器" allowfullscreen></iframe>
+</main>
+
+<footer class="reader-foot">
+  <a class="reader-btn" href="ielts-ebook-library.html">← 图书馆</a>
+  <a class="reader-btn" id="openExternal" target="_blank" rel="noopener">↗ 新窗口</a>
+</footer>
+
+<script src="ielti-config.js?v=20260805-2"></script>
+<script src="ielts-ebook-library-data.js?v=20260805-7"></script>
+<script src="ielti-core.js?v=20260805-38"></script>
+<style>
+  /* Reader page: hide mobile bottom tab bar and sync status (we have our own foot bar). */
+  @media (max-width: 760px) {
+    body.page-reader .apple-tabbar { display: none; }
+    body.page-reader.apple-ui { padding-bottom: 0; }
+    body.page-reader.apple-ui::after { display: none; }
+  }
+  body.page-reader [data-ielti-sync] { display: none; }
+  body.page-reader .apple-desktop-rail { display: none; }
+  @media (min-width: 761px) { body.page-reader.apple-ui { padding-left: 0; } }
+</style>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var READER_KEY = 'ielti_reader_state_v1';
+
+  function getBook() {
+    var id = new URLSearchParams(location.search).get('id') || '';
+    var books = window.IELTI_LIBRARY || [];
+    return books.find(function (b) { return b.id === id; });
+  }
+
+  function buildFileUrl(book) {
+    var base = window.IELTI_CONFIG.libraryPdfDir || 'http://192.168.10.115/IELTI/03漫画书合集pdf';
+    return base.replace(/\/$/, '') + '/' + encodeURIComponent(book.file);
+  }
+
+  var book = getBook();
+  if (!book) return;
+  var url = buildFileUrl(book);
+  document.title = book.title;
+  $('openExternal').href = url;
+
+  try {
+    var m = JSON.parse(localStorage.getItem(READER_KEY) || '{}');
+    m[book.id] = { at: Date.now() };
+    localStorage.setItem(READER_KEY, JSON.stringify(m));
+  } catch (_) {}
+
+  $('pdfFrame').src = url;
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f2f2f7">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.png" type="image/png">
+<link rel="apple-touch-icon" href="icon.png">
+<title>IELTI · 阅读图书馆</title>
+<script>
+document.documentElement.classList.add('ielti-booting');
+try {
+  var m = localStorage.getItem('ielti_display_mode_v1') || localStorage.getItem('ielti_theme_v1')
+    || (new Date().getHours() >= 19 || new Date().getHours() < 7 ? 'dark' : 'light');
+  if (['light', 'dark', 'eink'].indexOf(m) > -1) {
+    document.documentElement.dataset.display = m;
+    document.documentElement.dataset.theme = m === 'dark' ? 'dark' : 'light';
+    document.documentElement.classList.toggle('eink-mode', m === 'eink');
+  }
+} catch (e) {}
+setTimeout(() => document.documentElement.classList.remove('ielti-booting'), 1200);
+</script>
+<link rel="stylesheet" href="apple-ui.css?v=20260806-1">
+<link rel="stylesheet" href="eink-ui.css?v=20260804-1">
+<link rel="stylesheet" href="library-ui.css?v=20260805-3">
+<style>*,*::before,*::after{box-sizing:border-box}body{margin:0;background:var(--apple-bg);color:var(--apple-ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif}.top{display:flex;justify-content:space-between;gap:20px;align-items:center}.brand small{display:block;color:var(--apple-blue);font-weight:800;letter-spacing:.16em}.brand h1{margin:5px 0;font-family:Georgia,"Songti SC",serif;font-size:clamp(27px,4vw,43px);font-weight:600}.brand p{margin:0;color:var(--apple-secondary)}@media(max-width:520px){.top{align-items:flex-start}}</style>
+</head>
+<body class="apple-ui page-library">
+<main class="wrap" style="max-width:1080px;margin:0 auto;box-sizing:border-box">
+
+  <header class="top"><div class="brand"><small>IELTI READING LIBRARY</small><h1>阅读图书馆</h1><p>挑一本英文书读吧,目标是读懂更多一段落的英文。</p></div></header>
+
+  <section class="library-toolbar" aria-label="分类筛选">
+    <div class="library-chip-row" id="libCategories" role="tablist" aria-label="分类筛选"></div>
+    <div class="library-chip-row" id="libLevels" role="tablist" aria-label="难度筛选"></div>
+  </section>
+
+  <div class="library-result-bar">
+    <span id="libResultCount">—</span>
+    <button class="library-clear" id="libClear" type="button" hidden>清空筛选</button>
+    <div class="library-result-actions">
+      <label class="library-sort" for="libSort">
+        <span class="sub">排序</span>
+        <select id="libSort">
+          <option value="title">名称</option>
+          <option value="level">难度</option>
+        </select>
+      </label>
+      <button class="library-view-toggle" id="libViewToggle" type="button" title="切换视图">
+        <svg id="libViewIconGrid" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="3" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="3" y="14" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="14" width="7" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+        <svg id="libViewIconList" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" hidden><line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="18" x2="21" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <section id="grid" class="library-grid" aria-label="书目列表"></section>
+
+  <footer class="foot" style="margin-top:1.6rem;color:var(--apple-secondary);font-size:.78rem;text-align:center">
+    缩略图由 macOS Quick Look 离线生成 · 阅读器由 PDF.js 提供 ·
+    进度数据保存在本设备 localStorage
+  </footer>
+</main>
+
+<script src="ielti-config.js?v=20260805-2"></script>
+<script src="ielts-ebook-library-data.js?v=20260805-7"></script>
+<script src="ielti-core.js?v=20260805-38"></script>
+<script>
+(function () {
+  const BOOKS = window.IELTI_LIBRARY || [];
+  // Cover thumbnails live on the NAS HTTP server (thumbs/<id>.jpg).
+  const thumbBase = (window.IELTI_CONFIG && window.IELTI_CONFIG.libraryThumbDir) || 'thumbs';
+  // Fallback chain: NAS thumb → local thumbs/ folder → initial-letter placeholder.
+  window.IELTI_thumbError = function (img) {
+    if (img.dataset.triedLocal) {
+      img.remove();
+      const box = img.parentNode;
+      const old = box.querySelector('.library-thumb-fallback');
+      if (old) old.remove();
+      const f = document.createElement('div');
+      f.className = 'library-thumb-fallback';
+      try { f.textContent = decodeURIComponent(img.dataset.fallback || '📖'); }
+      catch (e) { f.textContent = '📖'; }
+      box.appendChild(f);
+      return;
+    }
+    img.dataset.triedLocal = '1';
+    img.src = 'thumbs/' + img.dataset.thumbId + '.jpg';
+  };
+  // Thumbnail error handler for list mode — only one fallback level
+  window.IELTI_thumbSmError = function (img) {
+    img.remove();
+    const box = img.parentNode;
+    const old = box.querySelector('.library-thumb-fallback');
+    if (old) old.remove();
+    const f = document.createElement('div');
+    f.className = 'library-thumb-fallback';
+    try { f.textContent = decodeURIComponent(img.dataset.fallback || '📖'); }
+    catch (e) { f.textContent = '📖'; }
+    box.appendChild(f);
+  };
+  // View mode: grid (default for local) or list (default for deployed)
+  const VIEW_KEY = 'ielti_library_view_mode';
+  function isLocalHost() {
+    const h = location.hostname || '';
+    return h === 'localhost' || h === '127.0.0.1' || h.startsWith('192.168.') || h.startsWith('10.') || h === '[::1]';
+  }
+  let viewMode = localStorage.getItem(VIEW_KEY) || (isLocalHost() ? 'grid' : 'list');
+  function applyViewMode() {
+    const grid = document.getElementById('grid');
+    const toggle = document.getElementById('libViewToggle');
+    const iconGrid = document.getElementById('libViewIconGrid');
+    const iconList = document.getElementById('libViewIconList');
+    grid.classList.toggle('list-mode', viewMode === 'list');
+    toggle.title = viewMode === 'grid' ? '切换到列表视图' : '切换到网格视图';
+    iconGrid.hidden = viewMode === 'list';
+    iconList.hidden = viewMode === 'grid';
+    localStorage.setItem(VIEW_KEY, viewMode);
+  }
+  document.getElementById('libViewToggle').onclick = function () {
+    viewMode = viewMode === 'grid' ? 'list' : 'grid';
+    applyViewMode();
+    render();
+  };
+  const CATEGORIES = {
+    'dictionary':    '字典 · 视觉词汇',
+    'vocab-grammar': '语法 · 词汇',
+    'knowledge':     '百科 · 知识',
+    'history':       '历史 · 信息',
+    'movie-tie-in':  '影视 · IP',
+    'kids-chapter':  '儿童章节书',
+    'picture-books': '绘本 · 启蒙',
+    'graphic-novels':'图像小说',
+    'ya-series':     '青少年系列',
+  };
+  const LEVEL_RANK = ['A1-A2','A2-B1','B1-B2','B1-C1','B2-C1','C1-C2'];
+  const LEVEL_LABEL = {
+    'A1-A2':  '入门 A1-A2',
+    'A2-B1':  '基础 A2-B1',
+    'B1-B2':  '中等 B1-B2',
+    'B1-C1':  '中高级 B1-C1',
+    'B2-C1':  '高级 B2-C1',
+    'C1-C2':  '高阶 C1-C2',
+  };
+
+  function escapeHtml(s) {
+    return String(s || '').replace(/[&<>"']/g, c => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    })[c]);
+  }
+  function initial(title) {
+    const t = (title || '').trim();
+    return t ? t.charAt(0).toUpperCase() : '📖';
+  }
+
+  // Build the URL to open the book. All PDFs are served from the NAS HTTP server.
+  function buildOpenUrl(book) {
+    const base = window.IELTI_CONFIG.libraryPdfDir || 'http://192.168.10.115/IELTI/03漫画书合集pdf';
+    return base.replace(/\/$/, '') + '/' + encodeURIComponent(book.file);
+  }
+
+  // State
+  let activeCat = '';
+  let activeLevel = '';
+  let sortBy = 'title';
+
+  // Category chips
+  const catRow = document.getElementById('libCategories');
+  const cats = BOOKS.reduce((m, b) => (m[b.category] = (m[b.category] || 0) + 1, m), {});
+  const catBtn = (key, label, count) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'library-chip' + (activeCat === key ? ' active' : '');
+    b.dataset.cat = key;
+    b.setAttribute('role', 'tab');
+    b.setAttribute('aria-selected', activeCat === key);
+    b.innerHTML = `${escapeHtml(label)}<span class="chip-count">${count}</span>`;
+    b.onclick = () => { activeCat = activeCat === key ? '' : key; render(); };
+    return b;
+  };
+  catRow.appendChild(catBtn('', '全部', BOOKS.length));
+  Object.keys(CATEGORIES).forEach(key => {
+    if (cats[key]) catRow.appendChild(catBtn(key, CATEGORIES[key], cats[key]));
+  });
+
+  // Level chips
+  const lvlRow = document.getElementById('libLevels');
+  const lvlBtn = (key, label) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'library-chip' + (activeLevel === key ? ' active' : '');
+    b.dataset.level = key;
+    b.setAttribute('role', 'tab');
+    b.setAttribute('aria-selected', activeLevel === key);
+    b.textContent = label;
+    b.onclick = () => { activeLevel = activeLevel === key ? '' : key; render(); };
+    return b;
+  };
+  const lvlCounts = BOOKS.reduce((m, b) => (m[b.level] = (m[b.level] || 0) + 1, m), {});
+  lvlRow.appendChild(lvlBtn('', '全部难度'));
+  LEVEL_RANK.forEach(k => { if (lvlCounts[k]) lvlRow.appendChild(lvlBtn(k, LEVEL_LABEL[k])); });
+
+  // Sort + view toggle wiring
+  const sortEl = document.getElementById('libSort');
+  sortEl.addEventListener('change', () => { sortBy = sortEl.value; render(); });
+  const clearBtn = document.getElementById('libClear');
+  clearBtn.onclick = () => { activeCat = ''; activeLevel = ''; sortBy = 'title'; sortEl.value = 'title'; render(); };
+
+  // Filtering / sorting
+  function filtered() {
+    let arr = BOOKS;
+    if (activeCat)   arr = arr.filter(b => b.category === activeCat);
+    if (activeLevel) arr = arr.filter(b => b.level === activeLevel);
+    const sorted = arr.slice();
+    switch (sortBy) {
+      case 'level':     sorted.sort((a,b) => LEVEL_RANK.indexOf(a.level) - LEVEL_RANK.indexOf(b.level)); break;
+      case 'title':
+      default:          sorted.sort((a,b) => (a.title || '').localeCompare(b.title || '', 'zh-Hans-CN'));
+    }
+    return sorted;
+  }
+
+  const grid = document.getElementById('grid');
+  function render() {
+    // Refresh chip activation
+    catRow.querySelectorAll('.library-chip').forEach(el => {
+      const on = el.dataset.cat === activeCat;
+      el.classList.toggle('active', on);
+      el.setAttribute('aria-selected', on);
+    });
+    lvlRow.querySelectorAll('.library-chip').forEach(el => {
+      const on = el.dataset.level === activeLevel;
+      el.classList.toggle('active', on);
+      el.setAttribute('aria-selected', on);
+    });
+
+    const list = filtered();
+    const resultEl = document.getElementById('libResultCount');
+    resultEl.textContent = `共 ${list.length} 本` + (BOOKS.length !== list.length ? ` / ${BOOKS.length} 本` : '');
+
+    clearBtn.hidden = !(activeCat || activeLevel || sortBy !== 'title');
+
+    if (!list.length) {
+      grid.innerHTML = '<div class="library-empty">没找到匹配的书 — 试试清空筛选或换个关键词。</div>';
+      return;
+    }
+
+    const cat = (c) => CATEGORIES[c] || c;
+    if (viewMode === 'list') {
+      grid.innerHTML = list.map(b => {
+        const title = b.title || b.file;
+        const author = b.author || '';
+        const isEpub = b.ext === 'epub';
+        const readerHref = isEpub
+          ? buildOpenUrl(b)
+          : 'ielts-ebook-reader.html?id=' + encodeURIComponent(b.id);
+        const fallbackUri = encodeURIComponent(initial(title));
+        return `<a class="library-card" href="${readerHref}" data-id="${escapeHtml(b.id)}"${isEpub ? ' target="_blank" rel="noopener"' : ''}>
+          <div class="library-thumb">
+            <img loading="lazy" decoding="async"
+                 src="thumbs-sm/${escapeHtml(b.id)}.jpg"
+                 data-fallback="${fallbackUri}"
+                 alt="${escapeHtml(title)}"
+                 onerror="window.IELTI_thumbSmError&&window.IELTI_thumbSmError(this)">
+          </div>
+          <div class="library-body">
+            <div class="library-title">${escapeHtml(title)}</div>
+            ${author ? `<div class="library-author">${escapeHtml(author)}</div>` : ''}
+            <div class="library-list-row">
+              <span class="library-open ${isEpub ? 'epub' : ''}">${isEpub ? 'Books' : '阅读 →'}</span>
+              <span class="library-pill cat">${escapeHtml(cat(b.category))}</span>
+              <span class="library-pill level">${escapeHtml(b.level)}</span>
+            </div>
+          </div>
+        </a>`;
+      }).join('');
+    } else {
+      grid.innerHTML = list.map(b => {
+        const title = b.title || b.file;
+        const author = b.author || '';
+        const isEpub = b.ext === 'epub';
+        const readerHref = isEpub
+          ? buildOpenUrl(b)
+          : 'ielts-ebook-reader.html?id=' + encodeURIComponent(b.id);
+        const fallbackUri = encodeURIComponent(initial(title));
+        return `<a class="library-card" href="${readerHref}" data-id="${escapeHtml(b.id)}"${isEpub ? ' target="_blank" rel="noopener"' : ''}>
+          <div class="library-thumb">
+            <img loading="lazy" decoding="async"
+                 src="${thumbBase}/${escapeHtml(b.id)}.jpg"
+                 data-thumb-id="${escapeHtml(b.id)}"
+                 data-fallback="${fallbackUri}"
+                 alt="${escapeHtml(title)}"
+                 onerror="window.IELTI_thumbError&&window.IELTI_thumbError(this)">
+            <span class="library-thumb-ext ${isEpub ? 'library-thumb-epub' : ''}">${isEpub ? 'EPUB' : 'PDF'}</span>
+          </div>
+          <div class="library-body">
+            <div class="library-title">${escapeHtml(title)}</div>
+            ${author ? `<div class="library-author">${escapeHtml(author)}</div>` : ''}
+            <div class="library-meta">
+              <span class="library-pill cat">${escapeHtml(cat(b.category))}</span>
+              <span class="library-pill level">${escapeHtml(b.level)}</span>
+            </div>
+            <span class="library-open ${isEpub ? 'epub' : ''}">${isEpub ? '在 Books 中打开' : '阅读 →'}</span>
+          </div>
+        </a>`;
+      }).join('');
+    }
+  }
+  applyViewMode();
+  render();
+})();
+</script>
+</body>
+</html>
