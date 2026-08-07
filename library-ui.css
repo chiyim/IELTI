@@ -59,8 +59,13 @@
   font: inherit; font-size: .85rem; color: var(--apple-ink);
 }
 .library-chip-row {
-  display: flex; flex-wrap: wrap; gap: .4rem;
+  display: flex; flex-wrap: nowrap; gap: .4rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
 }
+.library-chip-row::-webkit-scrollbar { display: none; }
 .library-chip {
   display: inline-flex;
   align-items: center; gap: .35rem;
@@ -157,8 +162,25 @@
 }
 .library-thumb-epub { background: rgba(110,80,180,.78); }
 
+.library-thumb-overlay {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 2.2rem .75rem .65rem;
+  background: linear-gradient(to top, rgba(0,0,0,.85) 0%, rgba(0,0,0,.5) 50%, transparent 100%);
+  display: flex;
+  flex-direction: column;
+  gap: .28rem;
+}
+.library-thumb-overlay .library-title {
+  color: #fff;
+  font-size: .82rem;
+  font-weight: 600;
+  line-height: 1.25;
+  -webkit-line-clamp: 2;
+}
+
 .library-body {
-  padding: .8rem .9rem 1rem;
+  padding: .48rem .75rem .58rem;
   display: flex; flex-direction: column;
   gap: .35rem;
   flex: 1;
@@ -180,7 +202,7 @@
 }
 .library-meta {
   display: flex; flex-wrap: wrap; gap: .35rem;
-  margin-top: auto; padding-top: .5rem;
+  justify-content: center; padding-top: 0;
 }
 .library-pill {
   padding: .15rem .5rem;
@@ -339,7 +361,7 @@
   }
   .library-hero h2 { font-size: 1.55rem; }
   .library-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: .65rem; }
-  .library-body { padding: .65rem .7rem .85rem; }
+  .library-body { padding: .42rem .6rem .52rem; }
   .library-title { font-size: .74rem; }
   .library-pill { font-size: .65rem; }
 
@@ -401,7 +423,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: .2rem;
+  gap: .55rem;
 }
 .library-grid.list-mode .library-list-row {
   display: flex;
@@ -410,8 +432,8 @@
 }
 .library-grid.list-mode .library-title {
   flex: 0 0 auto;
-  font-size: .82rem;
-  font-weight: 600;
+  font-size: .9rem;
+  font-weight: 500;
   -webkit-line-clamp: 1;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -445,7 +467,11 @@
   }
   .library-chip-row {
     gap: .3rem;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
   }
+  .library-chip-row::-webkit-scrollbar { display: none; }
   .library-grid.list-mode {
     grid-template-columns: 1fr;
   }
@@ -465,7 +491,15 @@
     gap: .25rem;
   }
   .library-grid.list-mode .library-title {
-    font-size: .76rem;
+    font-size: .82rem;
+    font-weight: 500;
+  }
+  .library-thumb-overlay {
+    padding: 1.6rem .55rem .5rem;
+    gap: .2rem;
+  }
+  .library-thumb-overlay .library-title {
+    font-size: .72rem;
   }
 }
 

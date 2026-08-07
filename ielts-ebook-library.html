@@ -123,15 +123,15 @@ setTimeout(() => document.documentElement.classList.remove('ielti-booting'), 120
     render();
   };
   const CATEGORIES = {
-    'dictionary':    '字典 · 视觉词汇',
-    'vocab-grammar': '语法 · 词汇',
-    'knowledge':     '百科 · 知识',
-    'history':       '历史 · 信息',
-    'movie-tie-in':  '影视 · IP',
-    'kids-chapter':  '儿童章节书',
-    'picture-books': '绘本 · 启蒙',
+    'dictionary':    '工具书',
+    'vocab-grammar': '语法',
+    'knowledge':     '百科',
+    'history':       '历史',
+    'movie-tie-in':  '影视',
+    'kids-chapter':  '儿童章节',
+    'picture-books': '绘本',
     'graphic-novels':'图像小说',
-    'ya-series':     '青少年系列',
+    'ya-series':     '青少年',
   };
   const LEVEL_RANK = ['A1-A2','A2-B1','B1-B2','B1-C1','B2-C1','C1-C2'];
   const LEVEL_LABEL = {
@@ -265,7 +265,6 @@ setTimeout(() => document.documentElement.classList.remove('ielti-booting'), 120
           </div>
           <div class="library-body">
             <div class="library-title">${escapeHtml(title)}</div>
-            ${author ? `<div class="library-author">${escapeHtml(author)}</div>` : ''}
             <div class="library-list-row">
               <span class="library-open ${isEpub ? 'epub' : ''}">${isEpub ? 'Books' : '阅读 →'}</span>
               <span class="library-pill cat">${escapeHtml(cat(b.category))}</span>
@@ -292,10 +291,11 @@ setTimeout(() => document.documentElement.classList.remove('ielti-booting'), 120
                  alt="${escapeHtml(title)}"
                  onerror="window.IELTI_thumbError&&window.IELTI_thumbError(this)">
             <span class="library-thumb-ext ${isEpub ? 'library-thumb-epub' : ''}">${isEpub ? 'EPUB' : 'PDF'}</span>
+            <div class="library-thumb-overlay">
+              <div class="library-title">${escapeHtml(title)}</div>
+            </div>
           </div>
           <div class="library-body">
-            <div class="library-title">${escapeHtml(title)}</div>
-            ${author ? `<div class="library-author">${escapeHtml(author)}</div>` : ''}
             <div class="library-meta">
               <span class="library-pill cat">${escapeHtml(cat(b.category))}</span>
               <span class="library-pill level">${escapeHtml(b.level)}</span>
