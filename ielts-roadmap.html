@@ -75,7 +75,9 @@ input[type=checkbox]{accent-color:#5B6CF5}
 @media(max-width: 640px) { .phase-tabs { flex-wrap: wrap; } .phase-tab { flex: 1 1 45%; } }
 
 .week-card { background: #fff; border: 1px solid #E2E2F0; border-radius: 16px; margin-bottom: 12px; overflow: hidden; scroll-margin-top: 16px; box-shadow: 0 2px 8px rgba(28,28,46,.04); }
-.week-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; border-left: 5px solid transparent; }
+.week-color-bar { flex: 0 0 6px; background: #E2E2F0; border-radius: 16px 0 0 16px; }
+.week-card-inner { flex: 1; min-width: 0; }
+.week-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; }
 .week-badge { font-size: 11px; font-weight: 700; color: #fff; border-radius: 6px; padding: 3px 8px; white-space: nowrap; }
 .week-head .title-wrap { flex: 1; min-width: 0; }
 .week-head .theme { font-size: 14px; font-weight: 700; margin: 0 0 2px; color: #1C1C2E; }
@@ -529,7 +531,7 @@ function renderWeeks() {
     const c = weekCounts(w);
 
     const head = document.createElement("div");
-    head.className = "week-head"; head.style.borderLeftColor = pinfo.color;
+    head.className = "week-head";
     head.innerHTML = `
       <span class="week-badge">第${w.week}周</span>
       <div class="title-wrap">
@@ -637,7 +639,22 @@ function renderWeeks() {
       body.appendChild(matBlock);
     }
 
-    card.appendChild(head); card.appendChild(body);
+    const colorBar = document.createElement("div");
+    colorBar.className = "week-color-bar";
+    colorBar.style.backgroundColor = pinfo.color;
+    const inner = document.createElement("div");
+    inner.className = "week-card-inner";
+    inner.appendChild(head);
+    inner.appendChild(body);
+    const currentWeekNum = Math.min(WEEKS.length, Math.max(1, Math.floor(currentDayIndex()/7) + 1));
+    if (w.week === currentWeekNum) {
+      card.style.display = "flex";
+      card.appendChild(colorBar);
+      card.appendChild(inner);
+    } else {
+      card.appendChild(head);
+      card.appendChild(body);
+    }
     if (openState[w.week]) card.classList.add("open");
     list.appendChild(card);
   }

@@ -444,6 +444,19 @@
       out.onfinish = () => { update(); out.cancel(); element.animate([{ transform: `translate3d(${-sign * 12}px,8px,0) scale(.985)`, opacity: 0 }, { transform: 'translate3d(0,0,0) scale(1)', opacity: 1 }], { duration: 300, easing: 'cubic-bezier(.16,1,.3,1)' }); };
     }
   };
+  function startStudyTimer() {
+    var TICK_MS = 20000, intervalId = null, lastTick = 0, active = document.visibilityState === 'visible';
+    function flush() { if (active && lastTick > 0) { var elapsed = Math.round((Date.now() - lastTick) / 1000); if (elapsed > 0) recordStudySeconds(elapsed, 'page'); } }
+    function tick() { if (!active) return; if (lastTick > 0) { var elapsed = Math.round((Date.now() - lastTick) / 1000); if (elapsed > 0) recordStudySeconds(elapsed, 'page'); } lastTick = Date.now(); }
+    function onVisibilityChange() {
+      if (document.visibilityState === 'visible') { active = true; lastTick = Date.now(); if (!intervalId) intervalId = setInterval(tick, TICK_MS); }
+      else { active = false; if (intervalId) { clearInterval(intervalId); intervalId = null; } flush(); lastTick = 0; }
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('beforeunload', function () { if (active && intervalId) { clearInterval(intervalId); intervalId = null; } flush(); });
+    window.addEventListener('pagehide', function () { if (active && intervalId) { clearInterval(intervalId); intervalId = null; } flush(); });
+    if (active) { lastTick = Date.now(); intervalId = setInterval(tick, TICK_MS); }
+  }
   function installChrome() {
     document.body.classList.add('apple-ui');
     applyRuntimeIcon();
@@ -451,6 +464,8 @@
     const pageClass = page === 'index.html' ? 'page-today' : page === 'ielts-roadmap.html' ? 'page-roadmap' : page === 'ielts-core-vocabulary.html' ? 'page-core' : page === 'ielts-vocabulary-categories.html' ? 'page-class' : page === 'ielts_word_memory_v2_ipa.html' ? 'page-review' : page === '121-letter-combinations.html' ? 'page-phonics' : (page === 'ielts-ebook-library.html' || page === 'ielts-ebook-reader.html') ? 'page-library' : '';
     if (pageClass) document.body.classList.add(pageClass);
     if (page === 'ielts-video-player.html') return;
+    var STUDY_TRACKED_PAGES = new Set(['ielts_word_memory_v2_ipa.html', '121-letter-combinations.html', 'ielts-core-vocabulary.html', 'ielts-vocabulary-categories.html', 'ielts-ebook-library.html', 'ielts-ebook-reader.html']);
+    if (STUDY_TRACKED_PAGES.has(page)) startStudyTimer();
     const syncPageTheme = () => document.body.classList.toggle('light', document.documentElement.dataset.theme === 'light');
     syncPageTheme();
     if (!document.querySelector('.apple-theme-toggle') && !document.getElementById('themeBtn')) {
