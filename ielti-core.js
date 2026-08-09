@@ -79,6 +79,15 @@
   const SYNC_DIRTY_KEY = 'ielti_sync_dirty_v1';
   const BACKUP_KEYS = ['ielti_progress_v3', 'ielts_g_plan_progress_v2', 'ielts_g_plan_start_v1', 'ielts_vocab_mastered_v1', 'wclass_known_v1', 'wclass_familiar_v1', 'ielts_srs_v2', 'ielts_review_prefs_v1', 'ielti_phonics_121_v1'];
   const DAY = 86400000;
+  const DEVICE_ID = (() => { let id = localStorage.getItem('ielti_device_id_v1'); if (!id) { id = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8); localStorage.setItem('ielti_device_id_v1', id); } return id; })();
+  const debugLog = (() => {
+    const MAX = 500, RETENTION_DAYS = 7;
+    function write(type, data) { model._debugLog ||= []; model._debugLog.push({ t: Date.now(), type, device: DEVICE_ID, data }); const cutoff = Date.now() - RETENTION_DAYS * DAY; model._debugLog = model._debugLog.filter(function(e) { return e.t >= cutoff; }); if (model._debugLog.length > MAX) model._debugLog = model._debugLog.slice(-MAX); }
+    const api = { write: write, tail: function(n) { return (model._debugLog || []).slice(-(n || 50)).reverse(); }, today: function() { const t0 = new Date(); t0.setHours(0, 0, 0, 0); return (model._debugLog || []).filter(function(e) { return e.t >= t0.getTime(); }); }, card: function(id) { return (model._debugLog || []).filter(function(e) { return e.data && (e.data.cardId === id || e.data.id === id); }); }, clear: function() { model._debugLog = []; save(); }, export: function() { return model._debugLog || []; }, all: function() { return model._debugLog || []; } };
+    global.__IELTI_LOG__ = api;
+    return api;
+  })();
+
   const parse = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; } };
   const nowIso = () => new Date().toISOString();
   function resolveMediaUrl(path) {
@@ -269,7 +278,7 @@
       if (rating === 3) { card.ease += 0.15; card.interval = card.reps === 1 ? 4 : Math.max(7, Math.round((card.interval || 3) * card.ease * 1.3)); }
       card.due = new Date(now + card.interval * DAY).toISOString();
     }
-    card.lastReviewed = nowIso(); card.mastered = card.reps >= 3 && card.interval >= 21; if (card.mastered !== wasMastered) card.masteredUpdatedAt = card.lastReviewed; cards[id] = card; markActivity('reviews'); markActivity(wasNew ? 'newWords' : 'reviewWords'); if (rating === 0) markActivity('forgotten'); if (!wasMastered && card.mastered) markActivity('newMastered'); save(); return card;
+    card.lastReviewed = nowIso(); card.mastered = card.reps >= 3 && card.interval >= 21; if (card.mastered !== wasMastered) card.masteredUpdatedAt = card.lastReviewed; cards[id] = card; markActivity('reviews'); markActivity(wasNew ? 'newWords' : 'reviewWords'); if (rating === 0) markActivity('forgotten'); if (!wasMastered && card.mastered) markActivity('newMastered'); debugLog.write('review', { deck: deck, cardId: id, rating: rating, due: card.due, interval: card.interval }); save(); return card;
   }
   function setRoadmap(completed, startDate) { model.roadmap.completed = completed || {}; if (typeof startDate === 'string') model.roadmap.startDate = startDate; save(); }
   function setMastered(deck, ids) { const cards = model.vocab[deck] ||= {}, stamp = nowIso(); const wanted = new Set(ids); Object.keys(cards).forEach(id => { if (cards[id].mastered && !wanted.has(id)) cards[id] = normalizeCard({ ...cards[id], mastered: false, masteredUpdatedAt: stamp }); }); wanted.forEach(id => { cards[id] = normalizeCard({ ...cards[id], reps: Math.max(3, cards[id]?.reps || 0), interval: Math.max(30, cards[id]?.interval || 0), mastered: true, masteredUpdatedAt: cards[id]?.mastered ? cards[id]?.masteredUpdatedAt : stamp }); }); save(); }
@@ -317,7 +326,7 @@
     const familiar = chooseFlag('familiar', 'familiarUpdatedAt'), mastered = chooseFlag('mastered', 'masteredUpdatedAt');
     return normalizeCard({ ...base, familiar: familiar.value, familiarUpdatedAt: familiar.updatedAt, mastered: mastered.value, masteredUpdatedAt: mastered.updatedAt });
   }
-  function merge(remote) { if (!remote || remote.version !== 3) return false; Object.entries(remote.roadmap?.completed || {}).forEach(([k, v]) => { if (v) model.roadmap.completed[k] = true; }); ['core', 'class'].forEach(deck => Object.entries(remote.vocab?.[deck] || {}).forEach(([id, card]) => { model.vocab[deck][id] = mergeCard(model.vocab[deck][id], card); })); if (remote.phonics) { const localPhonics = normalizePhonics(model.phonics), remotePhonics = normalizePhonics(remote.phonics); model.phonics = { learned: [...new Set([...localPhonics.learned, ...remotePhonics.learned])], reviews: [...new Set([...localPhonics.reviews, ...remotePhonics.reviews])], quiz: { right: Math.max(localPhonics.quiz.right, remotePhonics.quiz.right), total: Math.max(localPhonics.quiz.total, remotePhonics.quiz.total) } }; } Object.entries(remote.activity || {}).forEach(([day, activity]) => { const local = activityFor(day); ['reviews', 'courses', 'studySeconds', 'videoSeconds', 'courseSeconds', 'newWords', 'reviewWords', 'forgotten', 'dictCorrect', 'dictWrong', 'newMastered'].forEach(key => local[key] = Math.max(local[key] || 0, activity[key] || 0)); Object.entries(activity.timeByPeriod || {}).forEach(([key, value]) => { local.timeByPeriod ||= {}; local.timeByPeriod[key] = Math.max(local.timeByPeriod[key] || 0, value || 0); }); }); if (!model.roadmap.startDate && remote.roadmap?.startDate) model.roadmap.startDate = remote.roadmap.startDate; demoteLegacyClassMastery(); save(); return true; }
+  function merge(remote) { if (!remote || remote.version !== 3) return false; Object.entries(remote.roadmap?.completed || {}).forEach(function(e) { if (e[1]) model.roadmap.completed[e[0]] = true; }); var changedCards = 0; ['core', 'class'].forEach(function(deck) { Object.entries(remote.vocab?.[deck] || {}).forEach(function(e) { var before = JSON.stringify(normalizeCard(model.vocab[deck]?.[e[0]])); model.vocab[deck][e[0]] = mergeCard(model.vocab[deck][e[0]], e[1]); if (JSON.stringify(normalizeCard(model.vocab[deck][e[0]])) !== before) changedCards++; }); }); if (remote.phonics) { var lp = normalizePhonics(model.phonics), rp = normalizePhonics(remote.phonics); model.phonics = { learned: [...new Set(lp.learned.concat(rp.learned))], reviews: [...new Set(lp.reviews.concat(rp.reviews))], quiz: { right: Math.max(lp.quiz.right, rp.quiz.right), total: Math.max(lp.quiz.total, rp.quiz.total) } }; } Object.entries(remote.activity || {}).forEach(function(e) { var local = activityFor(e[0]); ['reviews', 'courses', 'studySeconds', 'videoSeconds', 'courseSeconds', 'newWords', 'reviewWords', 'forgotten', 'dictCorrect', 'dictWrong', 'newMastered'].forEach(function(key) { local[key] = Math.max(local[key] || 0, e[1][key] || 0); }); Object.entries(e[1].timeByPeriod || {}).forEach(function(p) { local.timeByPeriod ||= {}; local.timeByPeriod[p[0]] = Math.max(local.timeByPeriod[p[0]] || 0, p[1] || 0); }); }); if (!model.roadmap.startDate && remote.roadmap?.startDate) model.roadmap.startDate = remote.roadmap.startDate; if (remote._debugLog && remote._debugLog.length) { model._debugLog ||= []; var seen = new Set(model._debugLog.map(function(x) { return x.t + '|' + x.type + '|' + x.device; })); remote._debugLog.forEach(function(x) { var key = x.t + '|' + x.type + '|' + x.device; if (!seen.has(key)) { model._debugLog.push(x); seen.add(key); } }); model._debugLog.sort(function(a, b) { return a.t - b.t; }); if (model._debugLog.length > 500) model._debugLog = model._debugLog.slice(-500); } demoteLegacyClassMastery(); if (changedCards > 0) debugLog.write('sync_merge', { changed: changedCards }); save(); return true; }
   function hasCardProgress(card) {
     const c = normalizeCard(card);
     return !!(c.reps || c.lapses || c.interval || c.due || c.lastReviewed || c.familiar || c.mastered || c.familiarUpdatedAt || c.masteredUpdatedAt);
@@ -415,7 +424,7 @@
       syncStatus('已自动同步', 'ok');
       return true;
     }
-    catch (error) { console.warn('IELTI sync:', error, SYNC_URL); syncStatus(syncErrorMessage(error), 'error'); return false; }
+    catch (error) { console.warn('IELTI sync:', error, SYNC_URL); debugLog.write('sync_error', { error: String(error && error.message || error) }); syncStatus(syncErrorMessage(error), 'error'); return false; }
     finally {
       syncing = false;
       if (!_firstSyncDone) { _firstSyncDone = true; _firstSyncResolve(); }
@@ -644,6 +653,43 @@
     placeThemeControl(); placeAvatarControl(); matchMedia('(min-width:761px)').addEventListener('change', () => { placeThemeControl(); placeAvatarControl(); });
     if (!document.querySelector('[data-ielti-sync]') && !document.getElementById('syncState')) { const status = document.createElement('div'); status.dataset.ieltiSync = ''; status.className = 'ielti-sync-state'; status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite'); document.body.appendChild(status); }
     syncStatus(CLOUD_SYNC_ENABLED ? '准备自动同步…' : '本地模式 · 进度仅保存在此浏览器');
+
+    if (!document.getElementById("__dbg_panel__")) {
+      var dbgStyle = document.createElement("style");
+      dbgStyle.textContent = "#__dbg_btn__{position:fixed;bottom:16px;right:16px;z-index:99999;width:36px;height:36px;border-radius:50%;border:none;background:rgba(28,28,46,.75);color:#fff;font-size:18px;cursor:pointer;opacity:.35;transition:opacity .2s;display:flex;align-items:center;justify-content:center}#__dbg_btn__:hover{opacity:.85}#__dbg_panel__{position:fixed;top:0;right:0;z-index:99998;width:420px;max-width:100vw;height:100vh;background:#1C1C2E;color:#F4F4FC;font-size:12px;font-family:monospace;overflow-y:auto;transform:translateX(100%);transition:transform .25s ease;box-shadow:-4px 0 24px rgba(0,0,0,.35);padding:16px}#__dbg_panel__.open{transform:translateX(0)}#__dbg_close__{position:sticky;top:0;float:right;background:none;border:none;color:#9898BB;font-size:18px;cursor:pointer;z-index:1}#__dbg_filters__{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 14px;position:sticky;top:0;background:#1C1C2E;padding:8px 0;z-index:1}.dbg-filter{padding:4px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:transparent;color:#9898BB;cursor:pointer;font-size:11px;font-family:inherit}.dbg-filter.active{background:rgba(91,108,245,.35);border-color:#5B6CF5;color:#fff}.dbg-entry{padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);line-height:1.5}.dbg-time{color:#7878A0;margin-right:6px}.dbg-type{display:inline-block;padding:1px 6px;border-radius:4px;font-weight:700;margin-right:6px;font-size:10px}.dbg-type.review{background:#4CAF82;color:#fff}.dbg-type.queue_build{background:#F59E0B;color:#1C1C2E}.dbg-type.sync_merge{background:#5B6CF5;color:#fff}.dbg-type.sync_error{background:#E87878;color:#fff}.dbg-device{color:#585885;font-size:10px;margin-left:6px}.dbg-detail{color:#C8C8E8}@media(max-width:420px){#__dbg_panel__{width:100vw}}";
+      document.head.appendChild(dbgStyle);
+      var btn = document.createElement("button");
+      btn.id = "__dbg_btn__";
+      btn.textContent = "🐞";
+      btn.title = "调试日志";
+      document.body.appendChild(btn);
+      var panel = document.createElement("div");
+      panel.id = "__dbg_panel__";
+      panel.innerHTML = '<button id="__dbg_close__">✕</button><div id="__dbg_filters__"><button class="dbg-filter active" data-filter="all">全部</button><button class="dbg-filter" data-filter="review">评分</button><button class="dbg-filter" data-filter="queue_build">队列</button><button class="dbg-filter" data-filter="sync_merge">同步</button><button class="dbg-filter" data-filter="sync_error">错误</button></div><div id="__dbg_list__"></div>';
+      document.body.appendChild(panel);
+      var _dbgFilter = "all";
+      function _dbgRender() {
+        var list = document.getElementById("__dbg_list__");
+        if (!list) return;
+        var entries = model._debugLog || [];
+        var filtered = _dbgFilter === "all" ? entries : entries.filter(function(e) { return e.type === _dbgFilter; });
+        var html = filtered.slice(-100).reverse().map(function(e) {
+          var d = new Date(e.t), time = d.getHours().toString().padStart(2,"0") + ":" + d.getMinutes().toString().padStart(2,"0") + ":" + d.getSeconds().toString().padStart(2,"0");
+          var detail = "";
+          if (e.type === "review") { var r = e.data; detail = "deck=" + r.deck + " id=" + (r.cardId || "").slice(-6) + " rating=" + r.rating + " interval=" + (r.interval || 0) + "d due=" + (r.due || "").slice(0,10); }
+          else if (e.type === "queue_build") { detail = "deck=" + e.data.deck + " due=" + e.data.dueCount + " total=" + e.data.totalCards + " trigger=" + e.data.trigger; }
+          else if (e.type === "sync_merge") { detail = "changed=" + e.data.changed + " cards"; }
+          else if (e.type === "sync_error") { detail = e.data.error; }
+          return '<div class="dbg-entry"><span class="dbg-time">' + time + '</span><span class="dbg-type ' + e.type + '">' + e.type + '</span><span class="dbg-device">' + (e.device || "").slice(-8) + '</span><span class="dbg-detail">' + detail + '</span></div>';
+        }).join("");
+        list.innerHTML = html || '<div style="color:#9898BB;padding:20px;text-align:center">暂无日志</div>';
+      }
+      btn.onclick = function() { panel.classList.toggle("open"); if (panel.classList.contains("open")) _dbgRender(); };
+      document.getElementById("__dbg_close__").onclick = function() { panel.classList.remove("open"); };
+      document.getElementById("__dbg_filters__").onclick = function(ev) { var el = ev.target.closest(".dbg-filter"); if (!el) return; document.querySelectorAll("#__dbg_filters__ .dbg-filter").forEach(function(f) { f.classList.remove("active"); }); el.classList.add("active"); _dbgFilter = el.dataset.filter; _dbgRender(); };
+      document.addEventListener("ielti-progress", function() { if (panel.classList.contains("open")) _dbgRender(); });
+    }
+
     requestAnimationFrame(() => document.documentElement.classList.remove('ielti-booting'));
   }
   migrate();
