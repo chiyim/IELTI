@@ -1,71 +1,424 @@
-# IELTI 项目工作规则
+# IELTI AI 工作规则
 
-这个项目是用户的雅思学习工具。后续 Codex 进入本项目时，请优先遵守以下约定。
+这个项目是用户个人 IELTS General Training（G 类）学习工具。
 
-## 学习目标
+Codex / Claude Code 在进入本项目后，应优先阅读并遵守本文件。
 
-- 用户本次雅思考试目标为 IELTS General Training（G 类）。后续涉及课程安排、词汇优先级、例句、背词提示与练习场景时，默认以 G 类需求为准：书信写作、日常社会议题、工作与社区沟通，以及生活化的听力和口语场景。
-- 遇到较难的抽象或学术词，应优先使用简短、易理解的 G 类语境和常见搭配辅助学习；不要默认按 Academic IELTS 的学术论文或图表写作语境设计。
+项目详细介绍请参考 README.md。
 
-## 修改与发布
+---
 
-- 处理 IELTI 项目前，先进入 `/Users/chilam/Desktop/iLam_Codex/IELTI` 目录。网页主源码位于其下的 `GitHub/`；修改网页文件时以该目录为目标，避免在项目外层或其他副本中操作。
-- 默认只在本地修改。Codex 只负责在本目录修改和验证，不主动执行 `git push`。
-- 用户倾向自己用 GitHub Desktop 上传。一般情况下，除非用户明确说“上传到 GitHub / 发布 / 推送”，不要上传、推送或发布。
-- 用户要求上传时，只上传网页运行需要的静态文件，例如 HTML、CSS、JS、manifest、service worker、icon。
-- 不上传视频、PDF、课程资料、临时截图、备份进度文件、`node_modules` 或其他大文件。
-- 如果用户明确要求 Codex 代为上传，当前目录本身已经是 GitHub Desktop 管理的干净仓库；优先在本目录检查差异、显式暂存静态文件、提交并推送。
-- `deploy/` 目录不是主要维护位置；不要把它当作唯一源码来改。根目录页面和共享样式才是主要源码。
-- 如果网络连接 GitHub 失败，不要强行改远程或做破坏性操作；说明网络失败并等待用户重试。
-- 本机终端访问 GitHub 可能不会自动走浏览器代理。执行 GitHub 相关 `git` 命令时，临时加：
-  `git -c http.proxy=http://127.0.0.1:7890 -c https.proxy=http://127.0.0.1:7890 ...`
-  不要修改全局 Git 配置。
+# 1. 开发环境
 
-## 文件与源码
+当前项目环境：
 
-- 主要页面：
-  - `index.html`：今日学习首页
-  - `ielts-roadmap.html`：雅思 G 类学习路线图
-  - `ielts_word_memory_v2_ipa.html`：雅思词汇 · 记忆中心
-  - `ielts-core-vocabulary.html`：雅思核心词表
-  - `ielts-vocabulary-categories.html`：雅思词汇 · 分类记忆法
-  - `121-letter-combinations.html`：121 个字母组合
-- 共享样式主要在 `apple-ui.css` 和 `eink-ui.css`。
-- 共享逻辑主要在 `ielti-core.js`。
-- 页面需要统一的标题、导航、显示模式按钮、播放器按钮、Apple 风格、墨水屏适配时，优先改共享 CSS / 共享 JS，不要在每个页面各写一套互相覆盖的规则。
-- 修改 CSS/JS 后，需要更新 HTML 引用里的版本号，以及 `sw.js` 的缓存名，避免手机端继续读取旧缓存。
+- 主机：Mac mini M1
+- 项目路径：
 
-## 进度与同步
+```
+/Users/ilam/Projects/IELTI
+```
 
-- 进度同步由 `ielti-config.js` 配置；当前同步服务器使用 Worker：`https://word-sync.chilamc-y.workers.dev`。
-- 本地 `file://` 页面和 GitHub Pages 页面都要使用同一套 Worker 自动同步。
-- `localhost`、`127.0.0.1`、`::1` 视为开发调试环境，可以不自动同步。
-- NAS 只保留视频和 PDF；当前家里 Wi-Fi 媒体地址是 `http://192.168.10.115/IELTI/`。
-- GitHub Pages 是 HTTPS 页面，加载家里 NAS 的 HTTP 视频/PDF 可能受浏览器策略影响；如果浏览器拦截，需要在家里局域网环境单独处理媒体访问方式。
-- 用户的学习进度很重要，不要随意清空、重置或覆盖。
-- 分类记忆法和词汇记忆中心共享词汇学习状态，但“已熟悉”不等于“长期掌握”；长期掌握由词汇记忆中心的间隔重复复习结果决定。
-- 记忆中心的分类词汇和核心词表应分别保存本轮队列和当前进度，切换页面或切换词库后应能继续。
+- 编辑器：
+  - VS Code
+  - VS Code Remote SSH
 
-## 本地与线上区分
+- AI 工具：
+  - Codex CLI
+  - Claude Code
 
-- 本地 `file://` 打开时，默认网页 icon 和默认头像使用根目录 `icon_local.png`。
-- GitHub Pages / NAS 页面打开时，默认网页 icon 和默认头像使用根目录 `icon.png`。
-- 如果用户上传了自定义头像，自定义头像优先；右键头像重置后才回到对应环境的默认图标。
+当前目录即为：
 
-## 设计约定
+- 网站源码目录
+- GitHub Pages 发布目录
 
-- 整体视觉遵循 Apple 风格：轻量、克制、清晰、半透明材质、自然反馈。
-- 首页可以使用更活泼的大 Banner；其他页面不要使用大面积蓝色 Banner，风格应更轻、更统一。
-- 手机端标题排版、字号、留白应统一，以“词汇记忆中心”的标题体系为基准。
-- 手机端全局导航在底部；桌面端全局导航在左侧竖排。
-- 底部导航在 iPhone 上必须考虑 safe-area，保持固定在底部，点击区域要足够大，避免文字裁切。
-- 桌面端导航图标和按钮必须居中对齐，显示模式按钮固定在左侧导航栏底部。
-- 墨水屏模式要高对比、黑白清楚，尽量去掉阴影和复杂渐变，边框要清晰。
+不要假设存在其他源码副本。
 
-## 验证
+---
 
-- 修改 JS 后至少运行：
-  - `node --check ielti-core.js`
-  - 检查所有 HTML 内联脚本能否解析
-- 上传 GitHub 前确认没有视频/PDF等媒体文件被加入发布范围。
-- 如果只是本地修改，不要自动发布；等用户明确确认。
+# 2. 项目类型
+
+IELTI 是：
+
+- 原生 HTML5 多页面应用
+- 原生 CSS
+- 原生 JavaScript
+
+不使用：
+
+- React
+- Vue
+- TypeScript
+- Vite
+- Webpack
+- npm
+- package.json
+- 数据库
+
+不要主动引入新的前端框架或构建系统。
+
+保持：
+
+- 简单
+- 可维护
+- GitHub Pages 兼容
+
+---
+
+# 3. 修改原则
+
+修改代码前：
+
+1. 先理解现有结构。
+2. 检查相关 HTML、CSS、JS 文件。
+3. 说明修改方案。
+4. 只进行必要修改。
+
+不要：
+
+- 大规模重构
+- 重写整个页面
+- 修改目录结构
+- 删除旧功能
+- 替换技术架构
+
+优先：
+
+1. 稳定性
+2. 用户学习数据安全
+3. 保持现有设计
+4. 小范围优化
+
+---
+
+# 4. IELTS 学习目标
+
+用户目标：
+
+IELTS General Training（G 类）。
+
+涉及：
+
+- 词汇
+- 例句
+- 学习路线
+- 练习场景
+
+默认使用：
+
+- 日常生活
+- 工作
+- 社区沟通
+- 书信写作
+- 生活化听说场景
+
+不要默认按照 Academic IELTS：
+
+- 学术论文
+- 图表作文
+- 高难学术表达
+
+设计内容。
+
+---
+
+# 5. 核心代码规则
+
+## HTML
+
+主要页面：
+
+- index.html
+- ielts-roadmap.html
+- ielts_word_memory_v2_ipa.html
+- ielts-core-vocabulary.html
+- ielts-vocabulary-categories.html
+- 121-letter-combinations.html
+- ielts-video-player.html
+- ielts-ebook-library.html
+- ielts-ebook-reader.html
+
+修改 HTML 时：
+
+- 保持页面结构。
+- 保持导航一致。
+- 不删除已有功能。
+
+---
+
+## CSS
+
+主要样式：
+
+- apple-ui.css
+- eink-ui.css
+- library-ui.css
+
+规则：
+
+- 优先修改共享 CSS。
+- 不在多个页面重复写相同样式。
+- 保持 Apple 风格。
+
+设计要求：
+
+- 简洁
+- 清晰
+- 半透明材质
+- 自然反馈
+
+墨水屏模式：
+
+- 高对比
+- 黑白清晰
+- 减少阴影
+- 减少渐变
+
+---
+
+## JavaScript
+
+共享逻辑：
+
+- ielti-core.js
+
+负责：
+
+- 学习进度
+- 数据迁移
+- 间隔重复
+- 导入导出
+- 同步
+- 主题
+- 导航
+- 语音
+- 学习计时
+
+修改时必须谨慎。
+
+不要随意改变：
+
+- localStorage 数据结构
+- 学习进度格式
+- 同步逻辑
+
+---
+
+# 6. 学习数据保护
+
+学习数据非常重要。
+
+不要：
+
+- 清空 localStorage
+- 重置学习进度
+- 覆盖用户备份
+- 删除同步身份
+
+修改学习功能前：
+
+必须确认：
+
+- 数据迁移是否安全
+- 旧数据是否兼容
+
+---
+
+# 7. 同步规则
+
+同步配置：
+
+文件：
+
+```
+ielti-config.js
+```
+
+当前 Worker：
+
+```
+https://word-sync.chilamc-y.workers.dev
+```
+
+同步规则：
+
+- 本地 file:// 页面和 GitHub Pages 使用同一同步系统。
+- localhost、127.0.0.1、::1 视为开发环境。
+
+不要修改同步地址。
+
+不要删除：
+
+- 旧 PHP 同步代码
+- 数据兼容逻辑
+
+除非用户明确要求。
+
+---
+
+# 8. NAS 媒体规则
+
+视频和 PDF 不进入 GitHub。
+
+NAS 地址：
+
+```
+http://192.168.10.115/IELTI/
+```
+
+不要上传：
+
+- 视频
+- PDF
+- 课程资料
+
+不要修改 NAS 资源结构。
+
+注意：
+
+GitHub Pages 是 HTTPS。
+
+NAS 是 HTTP。
+
+可能存在浏览器混合内容限制。
+
+---
+
+# 9. PWA 缓存规则
+
+相关文件：
+
+- manifest.webmanifest
+- sw.js
+
+修改：
+
+- CSS
+- JS
+- HTML
+
+后：
+
+必须检查：
+
+- HTML 版本参数
+- sw.js 缓存名称
+
+避免移动端读取旧缓存。
+
+---
+
+# 10. Git 工作流
+
+默认：
+
+只修改本地。
+
+不要自动：
+
+- git commit
+- git push
+- 发布网站
+
+除非用户明确要求。
+
+提交前：
+
+检查：
+
+```bash
+git status
+```
+
+查看：
+
+```bash
+git diff
+```
+
+提交信息使用英文。
+
+例如：
+
+```text
+update IELTS vocabulary IPA display
+```
+
+---
+
+# 11. 发布规则
+
+GitHub Pages：
+
+- 使用 GitHub Actions
+- workflow：
+
+```
+.github/workflows/pages.yml
+```
+
+发布内容只包含：
+
+允许：
+
+- HTML
+- CSS
+- JS
+- manifest
+- Service Worker
+- 图标
+- 必要小尺寸封面
+
+禁止：
+
+- PDF
+- 视频
+- 学习备份
+- 截图
+- 日志
+- thumbs/
+- pdfs NAS 链接
+
+不要修改 deploy/ 作为主要源码。
+
+根目录才是源码。
+
+---
+
+# 12. 验证要求
+
+修改 JavaScript：
+
+至少执行：
+
+```bash
+node --check ielti-core.js
+```
+
+同时检查：
+
+- HTML 内联脚本
+- 页面加载
+- 手机端布局
+- 桌面端布局
+- safe-area
+- 墨水屏模式
+
+---
+
+# 13. AI 工作流程
+
+每次修改：
+
+1. 先分析。
+2. 提出方案。
+3. 修改最少文件。
+4. 验证。
+5. 汇报修改内容。
+
+不要未经确认：
+
+- 重构
+- 发布
+- 删除
+- 修改数据结构。
