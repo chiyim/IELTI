@@ -679,6 +679,7 @@ body.page-today .ring b{
 .ielti-study-pause-card button{appearance:none;min-height:2.45rem;padding:.55rem 1rem;border:0;border-radius:999px;background:var(--apple-blue);color:#fff;font:inherit;font-size:.9rem;font-weight:750;cursor:pointer}
 html.eink-mode .ielti-study-pause-card{background:#fff;border-color:#000;box-shadow:none}
 .time-correction-panel{margin-top:.75rem}.time-correction{display:flex;align-items:end;gap:.55rem;flex-wrap:wrap;margin-top:.35rem;padding:.7rem .8rem;border:1px solid var(--apple-line);border-radius:.9rem;background:color-mix(in srgb,var(--apple-solid) 72%,transparent)}.time-correction label{display:grid;gap:.25rem;color:var(--apple-secondary);font-size:.75rem;font-weight:700}.time-correction input{width:9.2rem;min-height:2.1rem;padding:.4rem .55rem;border:1px solid var(--apple-line);border-radius:.65rem;background:var(--apple-solid);color:var(--apple-ink);font:inherit}.time-correction .btn{min-height:2.1rem;padding:.42rem .75rem;font-size:.78rem}.time-correction small{width:100%;color:var(--apple-secondary);font-size:.74rem}
+.learning-split.is-masked,.learning-note:has(.learning-translation.is-masked) .learning-split{filter:blur(9px);user-select:none;cursor:pointer}
 @media(max-width:720px){.time-correction{align-items:stretch}.time-correction label{flex:1;min-width:8.3rem}.time-correction input{width:100%}}
 
 @media(min-width:701px){
