@@ -212,23 +212,67 @@
     localStorage.setItem('wclass_familiar_v1', JSON.stringify(familiarIds));
     localStorage.setItem('ielti_phonics_121_v1', JSON.stringify(normalizePhonics(model.phonics)));
   }
-  function save(emit = true) { model.updatedAt = nowIso(); mirrorLegacyProgress(); localStorage.setItem(KEY, JSON.stringify(model)); if (emit) global.dispatchEvent(new CustomEvent('ielti-progress', { detail: model })); }
+  function save(emit = true) { enforceStudyDurationCorrections(); model.updatedAt = nowIso(); mirrorLegacyProgress(); localStorage.setItem(KEY, JSON.stringify(model)); if (emit) global.dispatchEvent(new CustomEvent('ielti-progress', { detail: model })); }
   const localDay = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
-  function activityFor(day = localDay()) { return model.activity[day] ||= { reviews: 0, courses: 0, studySeconds: 0, videoSeconds: 0, newWords: 0, reviewWords: 0, forgotten: 0, dictCorrect: 0, dictWrong: 0, newMastered: 0, timeByPeriod: {} }; }
+  function activityFor(day = localDay()) { return model.activity[day] ||= { reviews: 0, courses: 0, studySeconds: 0, vocabStudySeconds: 0, videoSeconds: 0, newWords: 0, reviewWords: 0, forgotten: 0, dictCorrect: 0, dictWrong: 0, newMastered: 0, timeByPeriod: {} }; }
   function markActivity(kind) { const activity = activityFor(); activity[kind] = (activity[kind] || 0) + 1; }
   function recordActivity(kind, amount = 1) { const activity = activityFor(); activity[kind] = (activity[kind] || 0) + Math.max(0, Number(amount) || 0); save(false); }
   let lastTimeSyncAt = 0;
+  function completeDailyVocabTask() {
+    const startDate = model.roadmap.startDate || localStorage.getItem('ielts_g_plan_start_v1');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate || '')) return false;
+    const start = new Date(startDate + 'T00:00:00'), today = new Date(); today.setHours(0, 0, 0, 0);
+    const offset = Math.max(0, Math.floor((today - start) / DAY)), week = Math.min(26, Math.floor(offset / 7) + 1), day = offset % 7, key = 'voc_w' + week + '_d' + day;
+    const legacy = parse('ielts_g_plan_progress_v2', {});
+    if (legacy[key] && model.roadmap.completed?.[key]) return false;
+    legacy[key] = true;
+    localStorage.setItem('ielts_g_plan_progress_v2', JSON.stringify(legacy));
+    model.roadmap.completed ||= {};
+    model.roadmap.completed[key] = true;
+    debugLog.write('daily_vocab_task_completed', { key: key, seconds: activityFor().vocabStudySeconds || 0 });
+    return true;
+  }
   function recordStudySeconds(seconds, source = 'page') {
     const amount = Math.max(0, Math.round(Number(seconds) || 0));
     if (!amount) return;
     const activity = activityFor();
     activity.studySeconds = (activity.studySeconds || 0) + amount;
+    if (source === 'vocab') {
+      activity.vocabStudySeconds = (activity.vocabStudySeconds || 0) + amount;
+      if (activity.vocabStudySeconds >= 30 * 60) completeDailyVocabTask();
+    }
     if (source === 'video') activity.videoSeconds = (activity.videoSeconds || 0) + amount;
     const hour = new Date().getHours(), period = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
     activity.timeByPeriod ||= {}; activity.timeByPeriod[period] = (activity.timeByPeriod[period] || 0) + amount;
     const shouldSync = Date.now() - lastTimeSyncAt >= 300000;
     if (shouldSync) lastTimeSyncAt = Date.now();
     save(shouldSync);
+  }
+  function applyStudyDuration(day, totalSeconds) {
+    const activity = activityFor(day), target = Math.max(activity.courseSeconds || 0, Math.min(86400, Math.round(Number(totalSeconds) || 0)));
+    const previousPeriods = activity.timeByPeriod || {}, previousTotal = Object.values(previousPeriods).reduce((sum, value) => sum + Math.max(0, Number(value) || 0), 0);
+    activity.studySeconds = Math.max(0, target - (activity.courseSeconds || 0));
+    if (previousTotal > 0) {
+      let remaining = target;
+      const entries = Object.entries(previousPeriods);
+      activity.timeByPeriod = Object.fromEntries(entries.map(([period, value], index) => {
+        const amount = index === entries.length - 1 ? remaining : Math.round(target * Math.max(0, Number(value) || 0) / previousTotal);
+        remaining -= amount;
+        return [period, amount];
+      }));
+    }
+    return target;
+  }
+  function setStudyDuration(day, totalSeconds) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(day || ''))) throw new Error('日期格式不正确');
+    const target = applyStudyDuration(day, totalSeconds);
+    model.meta.activityCorrections ||= {};
+    model.meta.activityCorrections[day] = { totalSeconds: target, updatedAt: nowIso() };
+    save();
+    return target;
+  }
+  function enforceStudyDurationCorrections() {
+    Object.entries(model.meta?.activityCorrections || {}).forEach(([day, correction]) => applyStudyDuration(day, correction?.totalSeconds));
   }
   function recordCourseVideo(seconds, courseId) {
     const amount = Math.max(0, Math.round(Number(seconds) || 0));
@@ -453,17 +497,58 @@
       out.onfinish = () => { update(); out.cancel(); element.animate([{ transform: `translate3d(${-sign * 12}px,8px,0) scale(.985)`, opacity: 0 }, { transform: 'translate3d(0,0,0) scale(1)', opacity: 1 }], { duration: 300, easing: 'cubic-bezier(.16,1,.3,1)' }); };
     }
   };
-  function startStudyTimer() {
-    var TICK_MS = 20000, intervalId = null, lastTick = 0, active = document.visibilityState === 'visible';
-    function flush() { if (active && lastTick > 0) { var elapsed = Math.round((Date.now() - lastTick) / 1000); if (elapsed > 0) recordStudySeconds(elapsed, 'page'); } }
-    function tick() { if (!active) return; if (lastTick > 0) { var elapsed = Math.round((Date.now() - lastTick) / 1000); if (elapsed > 0) recordStudySeconds(elapsed, 'page'); } lastTick = Date.now(); }
+  function startStudyTimer(idleMinutes, source) {
+    // Only count time while the learner is still interacting with the study page.
+    // This prevents an open tab from silently adding hours to the daily total.
+    var TICK_MS = 20000, IDLE_MINUTES = Math.max(1, Number(idleMinutes) || 5), IDLE_MS = IDLE_MINUTES * 60 * 1000, intervalId = null;
+    var lastTick = 0, lastActivity = Date.now(), active = document.visibilityState === 'visible', idlePaused = false, pauseNotice = null;
+    function ensurePauseNotice() {
+      if (pauseNotice) return pauseNotice;
+      pauseNotice = document.createElement('div');
+      pauseNotice.className = 'ielti-study-pause-notice';
+      pauseNotice.hidden = true;
+      pauseNotice.innerHTML = '<div class="ielti-study-pause-card" role="status" aria-live="polite"><b>学习计时已暂停</b><span>连续 ' + IDLE_MINUTES + ' 分钟没有操作，已停止累计学习时长。</span><button type="button">继续学习</button></div>';
+      pauseNotice.querySelector('button').addEventListener('click', noteActivity);
+      document.body.appendChild(pauseNotice);
+      return pauseNotice;
+    }
+    function setPaused(paused) {
+      idlePaused = paused;
+      ensurePauseNotice().hidden = !paused;
+    }
+    function recordElapsed(now) {
+      if (!active || idlePaused || !lastTick) return;
+      var countUntil = Math.min(now, lastActivity + IDLE_MS);
+      var elapsed = Math.round((countUntil - lastTick) / 1000);
+      if (elapsed > 0) recordStudySeconds(elapsed, source || 'page');
+      lastTick = now;
+      if (now >= lastActivity + IDLE_MS) setPaused(true);
+    }
+    function tick() { recordElapsed(Date.now()); }
+    function noteActivity() {
+      if (!active || document.visibilityState !== 'visible') return;
+      var now = Date.now();
+      lastActivity = now;
+      if (idlePaused) { lastTick = now; setPaused(false); }
+    }
+    function stopTimer() {
+      recordElapsed(Date.now());
+      active = false;
+      lastTick = 0;
+      if (intervalId) { clearInterval(intervalId); intervalId = null; }
+    }
     function onVisibilityChange() {
-      if (document.visibilityState === 'visible') { active = true; lastTick = Date.now(); if (!intervalId) intervalId = setInterval(tick, TICK_MS); }
-      else { active = false; if (intervalId) { clearInterval(intervalId); intervalId = null; } flush(); lastTick = 0; }
+      if (document.visibilityState === 'visible') {
+        active = true;
+        lastTick = Date.now();
+        if (Date.now() - lastActivity >= IDLE_MS) setPaused(true);
+        if (!intervalId) intervalId = setInterval(tick, TICK_MS);
+      } else stopTimer();
     }
     document.addEventListener('visibilitychange', onVisibilityChange);
-    window.addEventListener('beforeunload', function () { if (active && intervalId) { clearInterval(intervalId); intervalId = null; } flush(); });
-    window.addEventListener('pagehide', function () { if (active && intervalId) { clearInterval(intervalId); intervalId = null; } flush(); });
+    ['pointerdown', 'keydown', 'touchstart', 'wheel'].forEach(function (eventName) { document.addEventListener(eventName, noteActivity, { passive: true }); });
+    window.addEventListener('beforeunload', stopTimer);
+    window.addEventListener('pagehide', stopTimer);
     if (active) { lastTick = Date.now(); intervalId = setInterval(tick, TICK_MS); }
   }
   function installChrome() {
@@ -474,7 +559,8 @@
     if (pageClass) document.body.classList.add(pageClass);
     if (page === 'ielts-video-player.html') return;
     var STUDY_TRACKED_PAGES = new Set(['ielts_word_memory_v2_ipa.html', '121-letter-combinations.html', 'ielts-core-vocabulary.html', 'ielts-vocabulary-categories.html', 'ielts-ebook-library.html', 'ielts-ebook-reader.html']);
-    if (STUDY_TRACKED_PAGES.has(page)) startStudyTimer();
+    var VOCAB_STUDY_PAGES = new Set(['ielts_word_memory_v2_ipa.html', 'ielts-core-vocabulary.html', 'ielts-vocabulary-categories.html']);
+    if (STUDY_TRACKED_PAGES.has(page)) startStudyTimer(page === 'ielts-ebook-reader.html' ? 10 : 5, VOCAB_STUDY_PAGES.has(page) ? 'vocab' : 'page');
     const syncPageTheme = () => document.body.classList.toggle('light', document.documentElement.dataset.theme === 'light');
     syncPageTheme();
     if (!document.querySelector('.apple-theme-toggle') && !document.getElementById('themeBtn')) {
@@ -694,7 +780,7 @@
   }
   migrate();
   mirrorLegacyProgress();
-  global.IELTI = { KEY, get: () => model, save, merge, summary, wordId, migrateClassWords, getDeck, isLongMastered, reviewCard, setRoadmap, setMastered, setFamiliar, setFamiliarList, replaceDeck, getPhonics, setPhonics, recordStudySeconds, recordCourseVideo, backfillCourseDurations, recordActivity, media: { resolve: resolveMediaUrl, nasBaseUrl: NAS_BASE_URL, nasHttpsBaseUrl: NAS_HTTPS_BASE_URL }, backup: { keys: [...BACKUP_KEYS], export: exportBackup, import: importBackup }, motion, speech: { speak: speakEnglish, pickVoice: pickEnglishVoice }, sync: { enabled: CLOUD_SYNC_ENABLED, url: SYNC_URL, run: autoSync, schedulePush: scheduleCloudPush, waitForFirstSync: () => Promise.race([_firstSyncPromise, new Promise(r => setTimeout(r, 4000))]) } };
+  global.IELTI = { KEY, get: () => model, save, merge, summary, wordId, migrateClassWords, getDeck, isLongMastered, reviewCard, setRoadmap, setMastered, setFamiliar, setFamiliarList, replaceDeck, getPhonics, setStudyDuration, recordStudySeconds, recordCourseVideo, backfillCourseDurations, recordActivity, media: { resolve: resolveMediaUrl, nasBaseUrl: NAS_BASE_URL, nasHttpsBaseUrl: NAS_HTTPS_BASE_URL }, backup: { keys: [...BACKUP_KEYS], export: exportBackup, import: importBackup }, motion, speech: { speak: speakEnglish, pickVoice: pickEnglishVoice }, sync: { enabled: CLOUD_SYNC_ENABLED, url: SYNC_URL, run: autoSync, schedulePush: scheduleCloudPush, waitForFirstSync: () => Promise.race([_firstSyncPromise, new Promise(r => setTimeout(r, 4000))]) } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', installChrome); else installChrome();
   global.addEventListener('ielti-progress', scheduleCloudPush);
   if (CLOUD_SYNC_ENABLED) {

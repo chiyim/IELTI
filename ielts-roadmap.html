@@ -265,6 +265,19 @@ function setVideoCompletion(id, checked, duration) {
   renderWeeks();
   renderPhaseDonut();
 }
+function appendTodayVocabTask(listEl, week, dayIndex) {
+  const key = vocKey(week.week, dayIndex), checked = !!progress[key], li = document.createElement("li");
+  li.className = checked ? "done" : "";
+  li.innerHTML = `<label class="today-task-label"><input type="checkbox" ${checked ? "checked" : ""}/><span class="today-task-title">词汇任务</span></label><a class="openlink-inline" href="ielts_word_memory_v2_ipa.html" target="_blank" rel="noopener" style="color:#5B6CF5;">打开 ↗</a>`;
+  li.querySelector("input").addEventListener("change", event => {
+    progress[key] = event.currentTarget.checked;
+    ensureStarted();
+    saveProgress(progress);
+    li.classList.toggle("done", event.currentTarget.checked);
+    renderDashboard(); renderWeeks(); renderPhaseDonut();
+  });
+  listEl.appendChild(li);
+}
 
 function countTotals() {
   let totalVideos = 0, doneVideos = 0, totalOther = 0, doneOther = 0;
@@ -321,7 +334,8 @@ function renderDashboard() {
       listEl.appendChild(li);
     }
   }
-  document.getElementById("todayVocab").textContent = "词汇任务：" + w.vocab;
+  if (localStorage.getItem(START_KEY) && dayNum <= WEEKS.length*7) appendTodayVocabTask(listEl, w, withinWeekDay);
+  document.getElementById("todayVocab").textContent = "";
   document.getElementById("todayJump").onclick = () => jumpToWeek(w.week);
 }
 
