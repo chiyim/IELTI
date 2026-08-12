@@ -77,13 +77,22 @@
   const SYNC_BLOCKED_BY_MIXED_CONTENT = !!configuredSyncUrl && !SYNC_URL && location.protocol === 'https:';
   const CLOUD_SYNC_ENABLED = !!SYNC_URL && !isDevHost;
   const SYNC_DIRTY_KEY = 'ielti_sync_dirty_v1';
+  const DUE_SNAPSHOT_KEY = 'ielti_due_snapshot_v1';
+  const DEBUG_LOG_KEY = 'ielti_debug_log_v2';
   const BACKUP_KEYS = ['ielti_progress_v3', 'ielts_g_plan_progress_v2', 'ielts_g_plan_start_v1', 'ielts_vocab_mastered_v1', 'wclass_known_v1', 'wclass_familiar_v1', 'ielts_srs_v2', 'ielts_review_prefs_v1', 'ielti_phonics_121_v1'];
   const DAY = 86400000;
   const DEVICE_ID = (() => { let id = localStorage.getItem('ielti_device_id_v1'); if (!id) { id = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8); localStorage.setItem('ielti_device_id_v1', id); } return id; })();
   const debugLog = (() => {
-    const MAX = 500, RETENTION_DAYS = 7;
-    function write(type, data) { model._debugLog ||= []; model._debugLog.push({ t: Date.now(), type, device: DEVICE_ID, data }); const cutoff = Date.now() - RETENTION_DAYS * DAY; model._debugLog = model._debugLog.filter(function(e) { return e.t >= cutoff; }); if (model._debugLog.length > MAX) model._debugLog = model._debugLog.slice(-MAX); }
-    const api = { write: write, tail: function(n) { return (model._debugLog || []).slice(-(n || 50)).reverse(); }, today: function() { const t0 = new Date(); t0.setHours(0, 0, 0, 0); return (model._debugLog || []).filter(function(e) { return e.t >= t0.getTime(); }); }, card: function(id) { return (model._debugLog || []).filter(function(e) { return e.data && (e.data.cardId === id || e.data.id === id); }); }, clear: function() { model._debugLog = []; save(); }, export: function() { return model._debugLog || []; }, all: function() { return model._debugLog || []; } };
+    const read = () => { try { const value = JSON.parse(localStorage.getItem(DEBUG_LOG_KEY)); return Array.isArray(value) ? value : []; } catch { return []; } };
+    const group = type => type === 'review' || type === 'queue_build' || type === 'daily_vocab_task_completed' ? 'activity' : /error$/.test(type) ? 'error' : 'sync';
+    const prune = entries => {
+      const now = Date.now(), rules = { activity: { max: 300, days: 7 }, sync: { max: 200, days: 14 }, error: { max: 200, days: 14 } };
+      return Object.keys(rules).flatMap(kind => entries.filter(e => group(e.type) === kind && e.t >= now - rules[kind].days * DAY).slice(-rules[kind].max)).sort((a, b) => a.t - b.t);
+    };
+    const persist = entries => { const kept = prune(entries); localStorage.setItem(DEBUG_LOG_KEY, JSON.stringify(kept)); return kept; };
+    function write(type, data = {}) { const t = Date.now(), eventId = `${DEVICE_ID}_${t.toString(36)}_${Math.random().toString(36).slice(2, 8)}`; const entry = { eventId, t, iso: new Date(t).toISOString(), type, device: DEVICE_ID, data }; persist(read().concat(entry)); return entry; }
+    function download() { const entries = read(), blob = new Blob([entries.map(e => JSON.stringify(e)).join('\n') + (entries.length ? '\n' : '')], { type: 'application/x-ndjson' }), link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `IELTI-debug-${new Date().toISOString().slice(0, 10)}.jsonl`; link.click(); setTimeout(() => URL.revokeObjectURL(link.href), 1000); return entries.length; }
+    const api = { write, tail: n => read().slice(-(n || 50)).reverse(), today: () => { const t0 = new Date(); t0.setHours(0, 0, 0, 0); return read().filter(e => e.t >= t0.getTime()); }, card: id => read().filter(e => e.data && (e.data.cardId === id || e.data.id === id)), clear: () => localStorage.removeItem(DEBUG_LOG_KEY), export: read, all: read, download, migrate: entries => persist(read().concat((entries || []).map(e => ({ ...e, eventId: e.eventId || `legacy_${e.device || 'unknown'}_${e.t}_${Math.random().toString(36).slice(2, 8)}`, iso: e.iso || new Date(e.t).toISOString() })))) };
     global.__IELTI_LOG__ = api;
     return api;
   })();
@@ -132,6 +141,9 @@
   model.phonics.quiz ||= { right: 0, total: 0 };
   model.activity ||= {};
   model.meta ||= {};
+  const hadEmbeddedDebugLog = Array.isArray(model._debugLog) && model._debugLog.length > 0;
+  if (hadEmbeddedDebugLog) debugLog.migrate(model._debugLog);
+  if (Object.prototype.hasOwnProperty.call(model, '_debugLog')) { delete model._debugLog; localStorage.setItem(KEY, JSON.stringify(model)); }
 
   function normalizeCard(card = {}) {
     return { reps: card.reps || card.level || 0, lapses: card.lapses || 0, interval: card.interval || 0, ease: card.ease || 2.5, due: card.due || null, lastReviewed: card.lastReviewed || card.last || null, familiar: !!card.familiar, mastered: !!card.mastered, familiarUpdatedAt: card.familiarUpdatedAt || null, masteredUpdatedAt: card.masteredUpdatedAt || null };
@@ -214,6 +226,20 @@
   }
   function save(emit = true) { enforceStudyDurationCorrections(); model.updatedAt = nowIso(); mirrorLegacyProgress(); localStorage.setItem(KEY, JSON.stringify(model)); if (emit) global.dispatchEvent(new CustomEvent('ielti-progress', { detail: model })); }
   const localDay = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
+  function dueSnapshot(advance = false) {
+    const day = localDay(), now = Date.now();
+    let snapshot = parse(DUE_SNAPSHOT_KEY, null);
+    if (!snapshot || snapshot.day !== day || !Number.isFinite(Number(snapshot.cutoff))) snapshot = { day, cutoff: now };
+    else if (advance) snapshot.cutoff = now;
+    localStorage.setItem(DUE_SNAPSHOT_KEY, JSON.stringify(snapshot));
+    return Number(snapshot.cutoff);
+  }
+  function isDueToday(card, now = Date.now(), cutoff = dueSnapshot()) {
+    const c = normalizeCard(card), due = new Date(c.due || 0).getTime();
+    if (!c.due || !Number.isFinite(due) || due > now) return false;
+    if (due <= cutoff) return true;
+    return c.interval === 0 && !!c.lastReviewed && new Date(c.lastReviewed).toLocaleDateString('en-CA') === localDay();
+  }
   function activityFor(day = localDay()) { return model.activity[day] ||= { reviews: 0, courses: 0, studySeconds: 0, vocabStudySeconds: 0, videoSeconds: 0, newWords: 0, reviewWords: 0, forgotten: 0, dictCorrect: 0, dictWrong: 0, newMastered: 0, timeByPeriod: {} }; }
   function markActivity(kind) { const activity = activityFor(); activity[kind] = (activity[kind] || 0) + 1; }
   function recordActivity(kind, amount = 1) { const activity = activityFor(); activity[kind] = (activity[kind] || 0) + Math.max(0, Number(amount) || 0); save(false); }
@@ -312,6 +338,7 @@
   function reviewCard(deck, id, rating) {
     const cards = model.vocab[deck] ||= {};
     const card = normalizeCard(cards[id]);
+    const beforeReview = normalizeCard(card);
     const wasNew = !(card.reps || card.lastReviewed || card.due), wasMastered = card.mastered;
     const now = Date.now();
     if (rating === 0) { card.reps = 0; card.lapses += 1; card.interval = 0; card.ease = Math.max(1.3, card.ease - 0.2); card.due = new Date(now + 10 * 60000).toISOString(); card.mastered = false; }
@@ -322,7 +349,7 @@
       if (rating === 3) { card.ease += 0.15; card.interval = card.reps === 1 ? 4 : Math.max(7, Math.round((card.interval || 3) * card.ease * 1.3)); }
       card.due = new Date(now + card.interval * DAY).toISOString();
     }
-    card.lastReviewed = nowIso(); card.mastered = card.reps >= 3 && card.interval >= 21; if (card.mastered !== wasMastered) card.masteredUpdatedAt = card.lastReviewed; cards[id] = card; markActivity('reviews'); markActivity(wasNew ? 'newWords' : 'reviewWords'); if (rating === 0) markActivity('forgotten'); if (!wasMastered && card.mastered) markActivity('newMastered'); debugLog.write('review', { deck: deck, cardId: id, rating: rating, due: card.due, interval: card.interval }); save(); return card;
+    card.lastReviewed = nowIso(); card.mastered = card.reps >= 3 && card.interval >= 21; if (card.mastered !== wasMastered) card.masteredUpdatedAt = card.lastReviewed; cards[id] = card; markActivity('reviews'); markActivity(wasNew ? 'newWords' : 'reviewWords'); if (rating === 0) markActivity('forgotten'); if (!wasMastered && card.mastered) markActivity('newMastered'); debugLog.write('review', { deck, word: String(id).split('|').pop(), cardId: id, rating, oldReps: beforeReview.reps, newReps: card.reps, oldInterval: beforeReview.interval, newInterval: card.interval, oldDue: beforeReview.due, newDue: card.due, lastReviewed: card.lastReviewed }); save(); return card;
   }
   function setRoadmap(completed, startDate) { model.roadmap.completed = completed || {}; if (typeof startDate === 'string') model.roadmap.startDate = startDate; save(); }
   function setMastered(deck, ids) { const cards = model.vocab[deck] ||= {}, stamp = nowIso(); const wanted = new Set(ids); Object.keys(cards).forEach(id => { if (cards[id].mastered && !wanted.has(id)) cards[id] = normalizeCard({ ...cards[id], mastered: false, masteredUpdatedAt: stamp }); }); wanted.forEach(id => { cards[id] = normalizeCard({ ...cards[id], reps: Math.max(3, cards[id]?.reps || 0), interval: Math.max(30, cards[id]?.interval || 0), mastered: true, masteredUpdatedAt: cards[id]?.mastered ? cards[id]?.masteredUpdatedAt : stamp }); }); save(); }
@@ -338,7 +365,7 @@
   function getPhonics() { return normalizePhonics(model.phonics); }
   function setPhonics(value) { model.phonics = normalizePhonics(value); save(); return model.phonics; }
   function getDeck(deck) { return model.vocab[deck] || {}; }
-  function dueCount(deck) { const now = Date.now(); return Object.values(getDeck(deck)).filter(c => c.due && new Date(c.due).getTime() <= now).length; }
+  function dueCount(deck) { const now = Date.now(), cutoff = dueSnapshot(); return Object.values(getDeck(deck)).filter(c => isDueToday(c, now, cutoff)).length; }
   function summary() { const completed = Object.values(model.roadmap.completed).filter(Boolean).length; const core = Object.values(model.vocab.core); const cls = Object.values(model.vocab.class); const start = model.roadmap.startDate ? new Date(model.roadmap.startDate + 'T00:00:00') : null; const day = start ? Math.max(1, Math.floor((Date.now() - start.getTime()) / DAY) + 1) : 1; return { day, week: Math.min(26, Math.ceil(day / 7)), completed, coreMastered: core.filter(c => c.mastered).length, classMastered: cls.filter(isLongMastered).length, due: dueCount('core') + dueCount('class'), today: model.activity[localDay()] || { reviews: 0, courses: 0, studySeconds: 0, videoSeconds: 0 } }; }
   function exportBackup() {
     const data = {};
@@ -370,7 +397,43 @@
     const familiar = chooseFlag('familiar', 'familiarUpdatedAt'), mastered = chooseFlag('mastered', 'masteredUpdatedAt');
     return normalizeCard({ ...base, familiar: familiar.value, familiarUpdatedAt: familiar.updatedAt, mastered: mastered.value, masteredUpdatedAt: mastered.updatedAt });
   }
-  function merge(remote) { if (!remote || remote.version !== 3) return false; Object.entries(remote.roadmap?.completed || {}).forEach(function(e) { if (e[1]) model.roadmap.completed[e[0]] = true; }); var changedCards = 0; ['core', 'class'].forEach(function(deck) { Object.entries(remote.vocab?.[deck] || {}).forEach(function(e) { var before = JSON.stringify(normalizeCard(model.vocab[deck]?.[e[0]])); model.vocab[deck][e[0]] = mergeCard(model.vocab[deck][e[0]], e[1]); if (JSON.stringify(normalizeCard(model.vocab[deck][e[0]])) !== before) changedCards++; }); }); if (remote.phonics) { var lp = normalizePhonics(model.phonics), rp = normalizePhonics(remote.phonics); model.phonics = { learned: [...new Set(lp.learned.concat(rp.learned))], reviews: [...new Set(lp.reviews.concat(rp.reviews))], quiz: { right: Math.max(lp.quiz.right, rp.quiz.right), total: Math.max(lp.quiz.total, rp.quiz.total) } }; } Object.entries(remote.activity || {}).forEach(function(e) { var local = activityFor(e[0]); ['reviews', 'courses', 'studySeconds', 'videoSeconds', 'courseSeconds', 'newWords', 'reviewWords', 'forgotten', 'dictCorrect', 'dictWrong', 'newMastered'].forEach(function(key) { local[key] = Math.max(local[key] || 0, e[1][key] || 0); }); Object.entries(e[1].timeByPeriod || {}).forEach(function(p) { local.timeByPeriod ||= {}; local.timeByPeriod[p[0]] = Math.max(local.timeByPeriod[p[0]] || 0, p[1] || 0); }); }); if (!model.roadmap.startDate && remote.roadmap?.startDate) model.roadmap.startDate = remote.roadmap.startDate; if (remote._debugLog && remote._debugLog.length) { model._debugLog ||= []; var seen = new Set(model._debugLog.map(function(x) { return x.t + '|' + x.type + '|' + x.device; })); remote._debugLog.forEach(function(x) { var key = x.t + '|' + x.type + '|' + x.device; if (!seen.has(key)) { model._debugLog.push(x); seen.add(key); } }); model._debugLog.sort(function(a, b) { return a.t - b.t; }); if (model._debugLog.length > 500) model._debugLog = model._debugLog.slice(-500); } demoteLegacyClassMastery(); if (changedCards > 0) debugLog.write('sync_merge', { changed: changedCards }); save(); return true; }
+  function normalizeRemoteCard(card, deck, stamp) {
+    const normalized = normalizeCard(card);
+    if (deck === 'class' && normalized.mastered && !isLongMastered(normalized)) {
+      return { card: normalizeCard({ ...normalized, mastered: false, masteredUpdatedAt: stamp }), corrected: true };
+    }
+    return { card: normalized, corrected: false };
+  }
+  function merge(remote, syncId = '') {
+    if (!remote || remote.version !== 3) return false;
+    Object.entries(remote.roadmap?.completed || {}).forEach(function(e) { if (e[1]) model.roadmap.completed[e[0]] = true; });
+    var changedCards = 0, correctedLegacyMastery = 0, remoteNewer = 0, localKept = 0, dueChanged = 0, masteredChanged = 0, samples = [], correctionStamp = nowIso();
+    ['core', 'class'].forEach(function(deck) {
+      Object.entries(remote.vocab?.[deck] || {}).forEach(function(e) {
+        var incoming = normalizeRemoteCard(e[1], deck, correctionStamp);
+        if (incoming.corrected) correctedLegacyMastery++;
+        var localCard = normalizeCard(model.vocab[deck]?.[e[0]]), before = JSON.stringify(localCard), remoteCard = incoming.card;
+        var localTime = new Date(localCard.lastReviewed || 0).getTime(), remoteTime = new Date(remoteCard.lastReviewed || 0).getTime();
+        model.vocab[deck][e[0]] = mergeCard(model.vocab[deck][e[0]], remoteCard);
+        var afterCard = normalizeCard(model.vocab[deck][e[0]]);
+        if (JSON.stringify(afterCard) !== before) {
+          changedCards++;
+          if (remoteTime > localTime) remoteNewer++; else localKept++;
+          if (localCard.due !== afterCard.due) dueChanged++;
+          if (localCard.mastered !== afterCard.mastered) masteredChanged++;
+          if (samples.length < 10) samples.push({ deck, word: String(e[0]).split('|').pop(), cardId: e[0], reason: incoming.corrected ? 'legacy_mastery_corrected' : remoteTime > localTime ? 'remote_newer' : 'flag_timestamp', local: { lastReviewed: localCard.lastReviewed, due: localCard.due, mastered: localCard.mastered }, remote: { lastReviewed: remoteCard.lastReviewed, due: remoteCard.due, mastered: remoteCard.mastered }, result: { lastReviewed: afterCard.lastReviewed, due: afterCard.due, mastered: afterCard.mastered } });
+        }
+      });
+    });
+    if (remote.phonics) { var lp = normalizePhonics(model.phonics), rp = normalizePhonics(remote.phonics); model.phonics = { learned: [...new Set(lp.learned.concat(rp.learned))], reviews: [...new Set(lp.reviews.concat(rp.reviews))], quiz: { right: Math.max(lp.quiz.right, rp.quiz.right), total: Math.max(lp.quiz.total, rp.quiz.total) } }; }
+    Object.entries(remote.activity || {}).forEach(function(e) { var local = activityFor(e[0]); ['reviews', 'courses', 'studySeconds', 'videoSeconds', 'courseSeconds', 'newWords', 'reviewWords', 'forgotten', 'dictCorrect', 'dictWrong', 'newMastered'].forEach(function(key) { local[key] = Math.max(local[key] || 0, e[1][key] || 0); }); Object.entries(e[1].timeByPeriod || {}).forEach(function(p) { local.timeByPeriod ||= {}; local.timeByPeriod[p[0]] = Math.max(local.timeByPeriod[p[0]] || 0, p[1] || 0); }); });
+    if (!model.roadmap.startDate && remote.roadmap?.startDate) model.roadmap.startDate = remote.roadmap.startDate;
+    demoteLegacyClassMastery();
+    if (changedCards > 0) debugLog.write('sync_merge', { syncId, changed: changedCards, remoteNewer, localKept, dueChanged, masteredChanged, samples });
+    if (correctedLegacyMastery > 0) { debugLog.write('sync_migration', { syncId, correctedLegacyMastery: correctedLegacyMastery }); localStorage.setItem(SYNC_DIRTY_KEY, '1'); }
+    save();
+    return true;
+  }
   function hasCardProgress(card) {
     const c = normalizeCard(card);
     return !!(c.reps || c.lapses || c.interval || c.due || c.lastReviewed || c.familiar || c.mastered || c.familiarUpdatedAt || c.masteredUpdatedAt);
@@ -378,7 +441,9 @@
   function compactModelForSync() {
     const compactDeck = deck => Object.fromEntries(Object.entries(model.vocab?.[deck] || {}).filter(([, card]) => hasCardProgress(card)).map(([id, card]) => [id, normalizeCard(card)]));
     const completed = Object.fromEntries(Object.entries(model.roadmap?.completed || {}).filter(([, value]) => value));
-    return { ...model, roadmap: { startDate: model.roadmap?.startDate || '', completed }, vocab: { core: compactDeck('core'), class: compactDeck('class') }, phonics: normalizePhonics(model.phonics), activity: model.activity || {} };
+    const compact = { ...model, roadmap: { startDate: model.roadmap?.startDate || '', completed }, vocab: { core: compactDeck('core'), class: compactDeck('class') }, phonics: normalizePhonics(model.phonics), activity: model.activity || {} };
+    delete compact._debugLog;
+    return compact;
   }
 
   let englishVoice = null, pendingSpeech = null;
@@ -418,15 +483,20 @@
       return url.href;
     } catch { return base; }
   };
-  async function cloudPull() {
+  async function cloudPull(syncId) {
     const urls = [...new Set([SYNC_URL, withPath(SYNC_URL, 'pull')])];
     let lastError = null;
     for (const url of urls) {
-      const response = await fetch(url, { headers: { Authorization: `Bearer ${SYNC_SCOPE}` }, cache: 'no-store' });
+      const started = performance.now();
+      debugLog.write('sync_pull_start', { syncId, path: new URL(url).pathname, online: navigator.onLine });
+      let response;
+      try { response = await fetch(url, { headers: { Authorization: `Bearer ${SYNC_SCOPE}` }, cache: 'no-store' }); }
+      catch (error) { debugLog.write('sync_pull_error', { syncId, path: new URL(url).pathname, online: navigator.onLine, durationMs: Math.round(performance.now() - started), error: String(error?.message || error) }); throw error; }
       if ((response.status === 404 || response.status === 405) && url !== urls[urls.length - 1]) { lastError = new Error(`pull ${response.status}`); continue; }
       try {
         const remote = await readSyncJson(response, 'pull');
-        if (remote.version === 3 && !remote.empty) { applyingRemote = true; try { merge(remote); } finally { applyingRemote = false; } return true; }
+        if (remote.version === 3 && !remote.empty) { applyingRemote = true; try { merge(remote, syncId); } finally { applyingRemote = false; } debugLog.write('sync_pull_success', { syncId, path: new URL(url).pathname, status: response.status, durationMs: Math.round(performance.now() - started) }); return true; }
+        debugLog.write('sync_pull_success', { syncId, path: new URL(url).pathname, status: response.status, durationMs: Math.round(performance.now() - started), empty: true });
         return false;
       } catch (error) {
         if (/pull (404|405)/.test(String(error?.message || error)) && url !== urls[urls.length - 1]) { lastError = error; continue; }
@@ -436,7 +506,7 @@
     if (lastError) throw lastError;
     return false;
   }
-  async function cloudPush() {
+  async function cloudPush(syncId) {
     const body = JSON.stringify(compactModelForSync());
     const attempts = [
       { url: SYNC_URL, method: 'POST' },
@@ -446,9 +516,13 @@
     ].filter((item, index, list) => list.findIndex(other => other.url === item.url && other.method === item.method) === index);
     let lastError = null;
     for (const attempt of attempts) {
-      const response = await fetch(attempt.url, { method: attempt.method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SYNC_SCOPE}` }, body });
+      const started = performance.now(), path = new URL(attempt.url).pathname;
+      debugLog.write('sync_push_start', { syncId, path, method: attempt.method, bytes: body.length, online: navigator.onLine });
+      let response;
+      try { response = await fetch(attempt.url, { method: attempt.method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SYNC_SCOPE}` }, body }); }
+      catch (error) { debugLog.write('sync_push_error', { syncId, path, method: attempt.method, online: navigator.onLine, durationMs: Math.round(performance.now() - started), error: String(error?.message || error) }); throw error; }
       if ((response.status === 404 || response.status === 405) && attempt !== attempts[attempts.length - 1]) { lastError = new Error(`push ${response.status}`); continue; }
-      try { await readSyncJson(response, 'push'); localStorage.removeItem(SYNC_DIRTY_KEY); return; }
+      try { await readSyncJson(response, 'push'); localStorage.removeItem(SYNC_DIRTY_KEY); debugLog.write('sync_push_success', { syncId, path, method: attempt.method, status: response.status, durationMs: Math.round(performance.now() - started) }); return; }
       catch (error) {
         if (/push (404|405)/.test(String(error?.message || error)) && attempt !== attempts[attempts.length - 1]) { lastError = error; continue; }
         throw error;
@@ -462,13 +536,16 @@
     if (!navigator.onLine) { syncStatus('离线，联网后自动同步'); return false; }
     if (syncing) { resyncRequested = true; resyncPushRequested ||= shouldPush; return false; }
     syncing = true; syncStatus('正在自动同步…');
+    const syncId = `${DEVICE_ID.slice(-8)}_${Date.now().toString(36)}`;
     try {
-      await cloudPull();
-      if (shouldPush || localStorage.getItem(SYNC_DIRTY_KEY) === '1') await cloudPush();
+      debugLog.write('sync_start', { syncId, requestedPush: shouldPush, dirty: localStorage.getItem(SYNC_DIRTY_KEY) === '1', protocol: location.protocol, host: location.host, online: navigator.onLine });
+      await cloudPull(syncId);
+      if (shouldPush || localStorage.getItem(SYNC_DIRTY_KEY) === '1') await cloudPush(syncId);
+      debugLog.write('sync_success', { syncId });
       syncStatus('已自动同步', 'ok');
       return true;
     }
-    catch (error) { console.warn('IELTI sync:', error, SYNC_URL); debugLog.write('sync_error', { error: String(error && error.message || error) }); syncStatus(syncErrorMessage(error), 'error'); return false; }
+    catch (error) { console.warn('IELTI sync:', error, SYNC_URL); debugLog.write('sync_error', { syncId, stage: /push/i.test(String(error?.message || '')) ? 'push' : 'pull_or_network', online: navigator.onLine, protocol: location.protocol, host: location.host, error: String(error && error.message || error) }); syncStatus(syncErrorMessage(error), 'error'); return false; }
     finally {
       syncing = false;
       if (!_firstSyncDone) { _firstSyncDone = true; _firstSyncResolve(); }
@@ -742,7 +819,7 @@
 
     if (!document.getElementById("__dbg_panel__")) {
       var dbgStyle = document.createElement("style");
-      dbgStyle.textContent = "#__dbg_btn__{position:fixed;bottom:16px;right:16px;z-index:99999;width:36px;height:36px;border-radius:50%;border:none;background:rgba(28,28,46,.75);color:#fff;font-size:18px;cursor:pointer;opacity:.35;transition:opacity .2s;display:flex;align-items:center;justify-content:center}#__dbg_btn__:hover{opacity:.85}#__dbg_panel__{position:fixed;top:0;right:0;z-index:99998;width:420px;max-width:100vw;height:100vh;background:#1C1C2E;color:#F4F4FC;font-size:12px;font-family:monospace;overflow-y:auto;transform:translateX(100%);transition:transform .25s ease;box-shadow:-4px 0 24px rgba(0,0,0,.35);padding:16px}#__dbg_panel__.open{transform:translateX(0)}#__dbg_close__{position:sticky;top:0;float:right;background:none;border:none;color:#9898BB;font-size:18px;cursor:pointer;z-index:1}#__dbg_filters__{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 14px;position:sticky;top:0;background:#1C1C2E;padding:8px 0;z-index:1}.dbg-filter{padding:4px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:transparent;color:#9898BB;cursor:pointer;font-size:11px;font-family:inherit}.dbg-filter.active{background:rgba(91,108,245,.35);border-color:#5B6CF5;color:#fff}.dbg-entry{padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);line-height:1.5}.dbg-time{color:#7878A0;margin-right:6px}.dbg-type{display:inline-block;padding:1px 6px;border-radius:4px;font-weight:700;margin-right:6px;font-size:10px}.dbg-type.review{background:#4CAF82;color:#fff}.dbg-type.queue_build{background:#F59E0B;color:#1C1C2E}.dbg-type.sync_merge{background:#5B6CF5;color:#fff}.dbg-type.sync_error{background:#E87878;color:#fff}.dbg-device{color:#585885;font-size:10px;margin-left:6px}.dbg-detail{color:#C8C8E8}@media(max-width:420px){#__dbg_panel__{width:100vw}}";
+      dbgStyle.textContent = "#__dbg_btn__{position:fixed;bottom:16px;right:16px;z-index:99999;width:36px;height:36px;border-radius:50%;border:none;background:rgba(28,28,46,.75);color:#fff;font-size:18px;cursor:pointer;opacity:.35;transition:opacity .2s;display:flex;align-items:center;justify-content:center}#__dbg_btn__:hover{opacity:.85}#__dbg_panel__{position:fixed;top:0;right:0;z-index:99998;width:520px;max-width:100vw;height:100vh;background:#1C1C2E;color:#F4F4FC;font-size:12px;font-family:monospace;overflow-y:auto;transform:translateX(100%);transition:transform .25s ease;box-shadow:-4px 0 24px rgba(0,0,0,.35);padding:16px}#__dbg_panel__.open{transform:translateX(0)}#__dbg_close__{position:sticky;top:0;float:right;background:none;border:none;color:#9898BB;font-size:18px;cursor:pointer;z-index:2}#__dbg_filters__,#__dbg_actions__{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;background:#1C1C2E;padding:8px 0}.dbg-filter,.dbg-action{padding:4px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:transparent;color:#9898BB;cursor:pointer;font-size:11px;font-family:inherit}.dbg-filter.active{background:rgba(91,108,245,.35);border-color:#5B6CF5;color:#fff}.dbg-action{color:#F4F4FC}.dbg-entry{padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);line-height:1.5;overflow-wrap:anywhere}.dbg-time{color:#9898BB;margin-right:6px}.dbg-type{display:inline-block;padding:1px 6px;border-radius:4px;font-weight:700;margin-right:6px;font-size:10px;background:#44445F}.dbg-type.review{background:#4CAF82}.dbg-type.queue_build{background:#F59E0B;color:#1C1C2E}.dbg-type.sync_merge,.dbg-type.sync_success{background:#5B6CF5}.dbg-type.sync_error,.dbg-type.sync_pull_error,.dbg-type.sync_push_error{background:#E87878}.dbg-device{color:#7878A0;font-size:10px;margin-left:6px}.dbg-detail{display:block;color:#C8C8E8;margin-top:3px;white-space:pre-wrap}@media(max-width:520px){#__dbg_panel__{width:100vw}}";
       document.head.appendChild(dbgStyle);
       var btn = document.createElement("button");
       btn.id = "__dbg_btn__";
@@ -751,28 +828,29 @@
       document.body.appendChild(btn);
       var panel = document.createElement("div");
       panel.id = "__dbg_panel__";
-      panel.innerHTML = '<button id="__dbg_close__">✕</button><div id="__dbg_filters__"><button class="dbg-filter active" data-filter="all">全部</button><button class="dbg-filter" data-filter="review">评分</button><button class="dbg-filter" data-filter="queue_build">队列</button><button class="dbg-filter" data-filter="sync_merge">同步</button><button class="dbg-filter" data-filter="sync_error">错误</button></div><div id="__dbg_list__"></div>';
+      panel.innerHTML = '<button id="__dbg_close__">✕</button><div id="__dbg_filters__"><button class="dbg-filter active" data-filter="all">全部</button><button class="dbg-filter" data-filter="review">评分</button><button class="dbg-filter" data-filter="queue_build">队列</button><button class="dbg-filter" data-filter="sync">同步</button><button class="dbg-filter" data-filter="error">错误</button></div><div id="__dbg_actions__"><button class="dbg-action" id="__dbg_copy__">复制诊断</button><button class="dbg-action" id="__dbg_download__">下载 JSONL</button><button class="dbg-action" id="__dbg_clear__">清空日志</button></div><div id="__dbg_list__"></div>';
       document.body.appendChild(panel);
       var _dbgFilter = "all";
       function _dbgRender() {
         var list = document.getElementById("__dbg_list__");
         if (!list) return;
-        var entries = model._debugLog || [];
-        var filtered = _dbgFilter === "all" ? entries : entries.filter(function(e) { return e.type === _dbgFilter; });
+        var entries = debugLog.all();
+        var filtered = _dbgFilter === "all" ? entries : entries.filter(function(e) { return _dbgFilter === 'sync' ? e.type.startsWith('sync_') : _dbgFilter === 'error' ? /error$/.test(e.type) : e.type === _dbgFilter; });
         var html = filtered.slice(-100).reverse().map(function(e) {
-          var d = new Date(e.t), time = d.getHours().toString().padStart(2,"0") + ":" + d.getMinutes().toString().padStart(2,"0") + ":" + d.getSeconds().toString().padStart(2,"0");
-          var detail = "";
-          if (e.type === "review") { var r = e.data; detail = "deck=" + r.deck + " id=" + (r.cardId || "").slice(-6) + " rating=" + r.rating + " interval=" + (r.interval || 0) + "d due=" + (r.due || "").slice(0,10); }
-          else if (e.type === "queue_build") { detail = "deck=" + e.data.deck + " due=" + e.data.dueCount + " total=" + e.data.totalCards + " trigger=" + e.data.trigger; }
-          else if (e.type === "sync_merge") { detail = "changed=" + e.data.changed + " cards"; }
-          else if (e.type === "sync_error") { detail = e.data.error; }
-          return '<div class="dbg-entry"><span class="dbg-time">' + time + '</span><span class="dbg-type ' + e.type + '">' + e.type + '</span><span class="dbg-device">' + (e.device || "").slice(-8) + '</span><span class="dbg-detail">' + detail + '</span></div>';
+          var d = new Date(e.t), time = String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0") + " " + String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0") + ":" + String(d.getSeconds()).padStart(2,"0");
+          var detail = JSON.stringify(e.data || {});
+          return '<div class="dbg-entry"><span class="dbg-time">' + time + '</span><span class="dbg-type ' + e.type + '">' + e.type + '</span><span class="dbg-device">' + (e.device || "").slice(-8) + '</span><span class="dbg-detail"></span></div>';
         }).join("");
         list.innerHTML = html || '<div style="color:#9898BB;padding:20px;text-align:center">暂无日志</div>';
+        filtered.slice(-100).reverse().forEach(function(e, i) { var el = list.children[i]?.querySelector('.dbg-detail'); if (el) el.textContent = JSON.stringify(e.data || {}, null, 2); });
       }
+      function _dbgDiagnostic() { var now = Date.now(), cutoff = dueSnapshot(), counts = {}; ['core','class'].forEach(function(deck) { var cards = Object.values(getDeck(deck)), raw = cards.filter(c => c.due && new Date(c.due).getTime() <= now).length, todayDue = cards.filter(c => isDueToday(c, now, cutoff)).length; counts[deck] = { rawDue: raw, todayDue, deferredDue: Math.max(0, raw - todayDue), totalProgressCards: cards.length }; }); return { generatedAt: nowIso(), appVersion: '20260812-46', device: DEVICE_ID.slice(-8), page: location.pathname.split('/').pop() || 'index.html', online: navigator.onLine, dueSnapshot: { day: localDay(), cutoff: new Date(cutoff).toISOString() }, decks: counts, recentSync: debugLog.all().filter(e => e.type.startsWith('sync_')).slice(-30), recentErrors: debugLog.all().filter(e => /error$/.test(e.type)).slice(-20) }; }
       btn.onclick = function() { panel.classList.toggle("open"); if (panel.classList.contains("open")) _dbgRender(); };
       document.getElementById("__dbg_close__").onclick = function() { panel.classList.remove("open"); };
       document.getElementById("__dbg_filters__").onclick = function(ev) { var el = ev.target.closest(".dbg-filter"); if (!el) return; document.querySelectorAll("#__dbg_filters__ .dbg-filter").forEach(function(f) { f.classList.remove("active"); }); el.classList.add("active"); _dbgFilter = el.dataset.filter; _dbgRender(); };
+      document.getElementById('__dbg_copy__').onclick = async function() { var text = JSON.stringify(_dbgDiagnostic(), null, 2); try { await navigator.clipboard.writeText(text); this.textContent = '已复制'; } catch { prompt('复制诊断报告', text); } setTimeout(() => { this.textContent = '复制诊断'; }, 1200); };
+      document.getElementById('__dbg_download__').onclick = function() { debugLog.download(); };
+      document.getElementById('__dbg_clear__').onclick = function() { if (confirm('确定清空此浏览器中的独立调试日志吗？学习进度不会受影响。')) { debugLog.clear(); _dbgRender(); } };
       document.addEventListener("ielti-progress", function() { if (panel.classList.contains("open")) _dbgRender(); });
     }
 
@@ -780,7 +858,7 @@
   }
   migrate();
   mirrorLegacyProgress();
-  global.IELTI = { KEY, get: () => model, save, merge, summary, wordId, migrateClassWords, getDeck, isLongMastered, reviewCard, setRoadmap, setMastered, setFamiliar, setFamiliarList, replaceDeck, getPhonics, setStudyDuration, recordStudySeconds, recordCourseVideo, backfillCourseDurations, recordActivity, media: { resolve: resolveMediaUrl, nasBaseUrl: NAS_BASE_URL, nasHttpsBaseUrl: NAS_HTTPS_BASE_URL }, backup: { keys: [...BACKUP_KEYS], export: exportBackup, import: importBackup }, motion, speech: { speak: speakEnglish, pickVoice: pickEnglishVoice }, sync: { enabled: CLOUD_SYNC_ENABLED, url: SYNC_URL, run: autoSync, schedulePush: scheduleCloudPush, waitForFirstSync: () => Promise.race([_firstSyncPromise, new Promise(r => setTimeout(r, 4000))]) } };
+  global.IELTI = { KEY, get: () => model, save, merge, summary, wordId, migrateClassWords, getDeck, isLongMastered, reviewCard, setRoadmap, setMastered, setFamiliar, setFamiliarList, replaceDeck, getPhonics, setStudyDuration, recordStudySeconds, recordCourseVideo, backfillCourseDurations, recordActivity, due: { cutoff: dueSnapshot, isToday: isDueToday }, media: { resolve: resolveMediaUrl, nasBaseUrl: NAS_BASE_URL, nasHttpsBaseUrl: NAS_HTTPS_BASE_URL }, backup: { keys: [...BACKUP_KEYS], export: exportBackup, import: importBackup }, motion, speech: { speak: speakEnglish, pickVoice: pickEnglishVoice }, sync: { enabled: CLOUD_SYNC_ENABLED, url: SYNC_URL, run: autoSync, schedulePush: scheduleCloudPush, waitForFirstSync: () => Promise.race([_firstSyncPromise, new Promise(r => setTimeout(r, 4000))]) } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', installChrome); else installChrome();
   global.addEventListener('ielti-progress', scheduleCloudPush);
   if (CLOUD_SYNC_ENABLED) {
