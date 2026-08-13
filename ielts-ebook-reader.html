@@ -61,7 +61,7 @@ setTimeout(() => document.documentElement.classList.remove('ielti-booting'), 120
   <a class="reader-btn" id="openExternal" target="_blank" rel="noopener">↗ 新窗口</a>
 </footer>
 
-<script src="ielti-config.js?v=20260805-2"></script>
+<script src="ielti-config.js?v=20260813-9"></script>
 <script src="ielts-ebook-library-data.js?v=20260805-7"></script>
 <script src="ielti-core.js?v=20260812-46"></script>
 <style>
@@ -87,7 +87,7 @@ setTimeout(() => document.documentElement.classList.remove('ielti-booting'), 120
   }
 
   function buildFileUrl(book) {
-    var base = window.IELTI_CONFIG.libraryPdfDir || 'http://192.168.10.115/IELTI/03漫画书合集pdf';
+    var base = window.IELTI_CONFIG.libraryPdfDir || 'https://ds418play.tail6d2cd4.ts.net/IELTI/03漫画书合集pdf';
     return base.replace(/\/$/, '') + '/' + encodeURIComponent(book.file);
   }
 

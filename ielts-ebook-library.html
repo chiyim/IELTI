@@ -62,13 +62,13 @@ setTimeout(() => document.documentElement.classList.remove('ielti-booting'), 120
   </footer>
 </main>
 
-<script src="ielti-config.js?v=20260805-2"></script>
+<script src="ielti-config.js?v=20260813-9"></script>
 <script src="ielts-ebook-library-data.js?v=20260805-7"></script>
 <script src="ielti-core.js?v=20260812-46"></script>
 <script>
 (function () {
   const BOOKS = window.IELTI_LIBRARY || [];
-  // Cover thumbnails live on the NAS HTTP server (thumbs/<id>.jpg).
+  // Cover thumbnails live on the NAS Tailscale HTTPS server (thumbs/<id>.jpg).
   const thumbBase = (window.IELTI_CONFIG && window.IELTI_CONFIG.libraryThumbDir) || 'thumbs';
   // Fallback chain: NAS thumb → local thumbs/ folder → initial-letter placeholder.
   window.IELTI_thumbError = function (img) {
@@ -153,9 +153,9 @@ setTimeout(() => document.documentElement.classList.remove('ielti-booting'), 120
     return t ? t.charAt(0).toUpperCase() : '📖';
   }
 
-  // Build the URL to open the book. All PDFs are served from the NAS HTTP server.
+  // Build the URL to open the book. All PDFs are served from the NAS over Tailscale HTTPS.
   function buildOpenUrl(book) {
-    const base = window.IELTI_CONFIG.libraryPdfDir || 'http://192.168.10.115/IELTI/03漫画书合集pdf';
+    const base = window.IELTI_CONFIG.libraryPdfDir || 'https://ds418play.tail6d2cd4.ts.net/IELTI/03漫画书合集pdf';
     return base.replace(/\/$/, '') + '/' + encodeURIComponent(book.file);
   }
 

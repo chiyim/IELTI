@@ -46,7 +46,7 @@
   const SYNC_SCOPE = CONFIG.syncScope || 'ielti-chilam-personal-site-v1';
   const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
   const NAS_HTTP_ORIGIN = 'http://192.168.10.115';
-  const NAS_HTTPS_ORIGIN = '';
+  const NAS_HTTPS_ORIGIN = 'https://ds418play.tail6d2cd4.ts.net';
   const isFilePage = location.protocol === 'file:';
   const isDevHost = LOCAL_HOSTS.has(location.hostname);
   const isLocalPage = isFilePage || isDevHost;

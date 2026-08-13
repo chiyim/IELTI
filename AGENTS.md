@@ -376,6 +376,20 @@ NAS 地址：
 http://192.168.10.115/IELTI/
 ```
 
+Tailscale HTTPS 地址：
+
+```
+https://ds418play.tail6d2cd4.ts.net/IELTI/
+```
+
+图书馆封面和 PDF 优先使用 Tailscale HTTPS：
+
+- 封面：`https://ds418play.tail6d2cd4.ts.net/IELTI/thumbs/<id>.jpg`
+- PDF：`https://ds418play.tail6d2cd4.ts.net/IELTI/03漫画书合集pdf/<文件名>`
+- 配置统一写在 `ielti-config.js` 的 `nasHttpsBaseUrl`、`libraryThumbDir` 和 `libraryPdfDir`。
+- GitHub Pages 是 HTTPS，禁止把图书馆媒体主地址改回 NAS HTTP，否则会触发混合内容限制。
+- 上述地址只对已连接当前 Tailnet 的设备可用。
+
 不要上传：
 
 - 视频
@@ -384,13 +398,7 @@ http://192.168.10.115/IELTI/
 
 不要修改 NAS 资源结构。
 
-注意：
-
-GitHub Pages 是 HTTPS。
-
-NAS 是 HTTP。
-
-可能存在浏览器混合内容限制。
+局域网 HTTP 地址仅作为本地兼容信息保留，不作为 GitHub Pages 图书馆媒体主地址。
 
 ---
 
