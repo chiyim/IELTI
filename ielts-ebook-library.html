@@ -87,7 +87,7 @@ setTimeout(() => document.documentElement.classList.remove('ielti-booting'), 120
     img.dataset.triedLocal = '1';
     img.src = 'thumbs/' + img.dataset.thumbId + '.jpg';
   };
-  // Thumbnail error handler for list mode — only one fallback level
+  // Thumbnail error handler for list mode — fall back to a placeholder.
   window.IELTI_thumbSmError = function (img) {
     img.remove();
     const box = img.parentNode;
@@ -251,14 +251,12 @@ setTimeout(() => document.documentElement.classList.remove('ielti-booting'), 120
         const title = b.title || b.file;
         const author = b.author || '';
         const isEpub = b.ext === 'epub';
-        const readerHref = isEpub
-          ? buildOpenUrl(b)
-          : 'ielts-ebook-reader.html?id=' + encodeURIComponent(b.id);
+        const readerHref = buildOpenUrl(b);
         const fallbackUri = encodeURIComponent(initial(title));
-        return `<a class="library-card" href="${readerHref}" data-id="${escapeHtml(b.id)}"${isEpub ? ' target="_blank" rel="noopener"' : ''}>
+        return `<a class="library-card" href="${readerHref}" data-id="${escapeHtml(b.id)}" target="_blank" rel="noopener">
           <div class="library-thumb">
             <img loading="lazy" decoding="async"
-                 src="thumbs-sm/${escapeHtml(b.id)}.jpg"
+                 src="${thumbBase}/${escapeHtml(b.id)}.jpg"
                  data-fallback="${fallbackUri}"
                  alt="${escapeHtml(title)}"
                  onerror="window.IELTI_thumbSmError&&window.IELTI_thumbSmError(this)">
@@ -278,11 +276,9 @@ setTimeout(() => document.documentElement.classList.remove('ielti-booting'), 120
         const title = b.title || b.file;
         const author = b.author || '';
         const isEpub = b.ext === 'epub';
-        const readerHref = isEpub
-          ? buildOpenUrl(b)
-          : 'ielts-ebook-reader.html?id=' + encodeURIComponent(b.id);
+        const readerHref = buildOpenUrl(b);
         const fallbackUri = encodeURIComponent(initial(title));
-        return `<a class="library-card" href="${readerHref}" data-id="${escapeHtml(b.id)}"${isEpub ? ' target="_blank" rel="noopener"' : ''}>
+        return `<a class="library-card" href="${readerHref}" data-id="${escapeHtml(b.id)}" target="_blank" rel="noopener">
           <div class="library-thumb">
             <img loading="lazy" decoding="async"
                  src="${thumbBase}/${escapeHtml(b.id)}.jpg"
