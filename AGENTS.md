@@ -387,8 +387,8 @@ https://ds418play.tail6d2cd4.ts.net/IELTI/
 - 封面：`https://ds418play.tail6d2cd4.ts.net/IELTI/thumbs/<id>.jpg`
 - PDF：`https://ds418play.tail6d2cd4.ts.net/IELTI/03漫画书合集pdf/<文件名>`
 - 配置统一写在 `ielti-config.js` 的 `nasHttpsBaseUrl`、`libraryThumbDir` 和 `libraryPdfDir`。
-- 网格和列表两种图书馆模式的封面都必须使用 `libraryThumbDir`，不得让列表模式回退为固定的本地 `thumbs-sm/` 主地址。
-- PDF 卡片必须以顶层新窗口直接打开 NAS HTTPS 地址，不要先嵌入 GitHub Pages 的 iframe；Chrome 对公网页面嵌入 Tailscale 私网子框架有额外限制。
+- 列表模式使用随 GitHub Pages 发布的轻量封面 `thumbs-sm/<id>.jpg`；网格展示模式使用 `libraryThumbDir` 指向的 NAS 大封面。不要混淆两套资源。
+- PDF 卡片保持进入 `ielts-ebook-reader.html?id=<id>`，由阅读器使用 `libraryPdfDir` 加载 NAS 文件；EPUB 可以直接打开媒体地址。
 - GitHub Pages 是 HTTPS，禁止把图书馆媒体主地址改回 NAS HTTP，否则会触发混合内容限制。
 - 上述地址只对已连接当前 Tailnet 的设备可用。
 
