@@ -218,7 +218,7 @@ function loadProgress() { try { return JSON.parse(localStorage.getItem(STORAGE_K
 function saveProgress(p) { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); if (window.IELTI) IELTI.setRoadmap(p, localStorage.getItem("ielts_g_plan_start_v1") || ""); }
 let progress = loadProgress();
 function mediaUrl(path) { return window.IELTI?.media?.resolve ? IELTI.media.resolve(path) : path; }
-function playerUrl(video) { const src = mediaUrl(video.url); return location.protocol === 'file:' ? src : `ielts-video-player.html?id=${encodeURIComponent(video.id)}&duration=${encodeURIComponent(video.dur || 0)}&src=${encodeURIComponent(src)}&title=${encodeURIComponent(video.title)}`; }
+function playerUrl(video) { const src = mediaUrl(video.url); return `ielts-video-player.html?id=${encodeURIComponent(video.id)}&duration=${encodeURIComponent(video.dur || 0)}&src=${encodeURIComponent(src)}&title=${encodeURIComponent(video.title)}`; }
 
 // 开始日期：从第一次打卡那天自动记录，不再写死
 const START_KEY = "ielts_g_plan_start_v1";

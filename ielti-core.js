@@ -104,9 +104,6 @@
     try {
       const raw = String(path);
       if (/^[a-z][a-z0-9+.-]*:/i.test(raw)) return raw;
-      if (location.protocol === 'file:') {
-        return new URL(`../${raw.replace(/^(?:\.\/)+/, '')}`, location.href).href;
-      }
       if (sameNasHost()) return raw;
       const base = NAS_HTTPS_BASE_URL || NAS_BASE_URL;
       return base ? new URL(raw, base).href : raw;

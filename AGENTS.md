@@ -394,7 +394,7 @@ https://ds418play.tail6d2cd4.ts.net/IELTI/
 
 学习路线图视频规则：
 
-- 路线图视频必须通过 `nasHttpsBaseUrl` 生成 Tailscale HTTPS 地址，并在 `ielts-video-player.html` 内嵌播放，不得因页面为 HTTPS 而跳转到外部播放器。
+- 路线图视频必须通过 `nasHttpsBaseUrl` 生成 Tailscale HTTPS 地址，并在 `ielts-video-player.html` 内嵌播放；GitHub Pages 和本地 `file:` 页面都不得跳转到外部播放器或解析成 Mac 本地视频文件。
 - 播放器按真实播放秒数累计学习时长；暂停、后台和拖动跳转不得虚增时长。
 - 单个视频累计实际观看达到视频时长的 90%，或自然播放结束后，自动标记路线图课程完成；不得要求用户必须手动勾选。
 - 视频观看断点和累计时长写入 `ielti_video_watch_v1`，并纳入学习备份。
