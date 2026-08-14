@@ -298,19 +298,7 @@
     Object.entries(model.meta?.activityCorrections || {}).forEach(([day, correction]) => applyStudyDuration(day, correction?.totalSeconds));
   }
   function recordCourseVideo(seconds, courseId) {
-    const amount = Math.max(0, Math.round(Number(seconds) || 0));
-    if (!amount) return;
-    const activity = activityFor();
-    activity.courseSeconds = (activity.courseSeconds || 0) + amount;
-    activity.courses = (activity.courses || 0) + 1;
-    const hour = new Date().getHours(), period = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
-    activity.timeByPeriod ||= {}; activity.timeByPeriod[period] = (activity.timeByPeriod[period] || 0) + amount;
-    if (courseId) {
-      const baseline = new Set(model.meta.courseDurationBaselineIds || []);
-      baseline.add(String(courseId));
-      model.meta.courseDurationBaselineIds = [...baseline];
-    }
-    save();
+    return completeCourseVideo(courseId);
   }
   function completeCourseVideo(courseId) {
     const id = String(courseId || '');

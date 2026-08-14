@@ -398,6 +398,9 @@ https://ds418play.tail6d2cd4.ts.net/IELTI/
 - NAS `/Volumes/web/IELTI/` 必须同步部署最新版 `ielts-video-player.html` 和 `ielti-core.js`；保留 NAS 自己的 `ielti-config.js`，不要用 GitHub 配置覆盖它。
 - 播放器按真实播放秒数累计学习时长；暂停、后台和拖动跳转不得虚增时长。
 - 单个视频累计实际观看达到视频时长的 90%，或自然播放结束后，自动标记路线图课程完成；不得要求用户必须手动勾选。
+- 路线图和首页的视频勾选框仅展示完成状态，必须禁用手动修改；旧版 `recordCourseVideo` 调用只允许标记完成，不得按视频标称总时长增加学习时长。
+- 路线图和首页的词汇打卡勾选框也只展示完成状态，必须禁用手动修改；当天 `vocabStudySeconds` 累计达到 30 分钟后，由 `completeDailyVocabTask()` 自动完成对应日期的词汇任务。
+- 学习路线图每周卡片里的“词汇打卡”和“本周复习+词汇巩固”入口统一链接到记忆中心 `ielts_word_memory_v2_ipa.html`，不要再按周次跳转到核心词表轮次页面。
 - 视频观看断点和累计时长写入 `ielti_video_watch_v1`，并纳入学习备份。
 
 不要上传：
