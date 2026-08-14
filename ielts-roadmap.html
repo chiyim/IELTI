@@ -163,7 +163,7 @@ input[type=checkbox]{accent-color:#5B6CF5}
   <div class="section-title">使用说明 <span class="reset-btn" id="resetBtn">重置全部打卡记录</span><span class="postpone-btn" id="postponeBtn">我落后了，顺延进度</span></div>
   <div style="font-size:12.5px;color:#7878A0;line-height:1.8;">
     · 每周卡片点击标题栏可展开/收起，前 6 天是当天要看的具体视频，第 7 天为复习日。<br>
-    · 每个视频前的方框可勾选打卡，标题后「打开」按钮会在本机默认播放器/浏览器中打开该视频文件。<br>
+    · 点击「打开」进入站内播放器；播放器按实际观看时长记录学习，累计观看达到 90% 后自动完成课程。<br>
     · 「本周资料」是配套的 PDF 讲义、词表、机经、录音等参考材料，可以点击打开，但不计入打卡进度。<br>
     · 打卡状态会先保存在本设备浏览器中；自动同步服务器可把进度合并到你的其他设备。
   </div>
@@ -171,7 +171,7 @@ input[type=checkbox]{accent-color:#5B6CF5}
   <div class="footnote">数据基于「01雅思G类录播课」文件夹实际视频文件自动生成 · 共 393 个视频 + 59 份配套资料</div>
 </div>
 
-<script src="ielti-config.js?v=20260728-5"></script><script src="ielti-core.js?v=20260812-46"></script>
+<script src="ielti-config.js?v=20260728-5"></script><script src="ielti-core.js?v=20260814-47"></script>
 <script src="ielts-roadmap-data.js?v=20260804-1"></script>
 <script>
 window.IELTI_normalizeRoadmapExercises?.(window.IELTI_WEEKS);
@@ -218,7 +218,7 @@ function loadProgress() { try { return JSON.parse(localStorage.getItem(STORAGE_K
 function saveProgress(p) { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); if (window.IELTI) IELTI.setRoadmap(p, localStorage.getItem("ielts_g_plan_start_v1") || ""); }
 let progress = loadProgress();
 function mediaUrl(path) { return window.IELTI?.media?.resolve ? IELTI.media.resolve(path) : path; }
-function playerUrl(video) { const src = mediaUrl(video.url); return location.protocol === 'file:' || (location.protocol === 'https:' && src.startsWith('http:')) ? src : `ielts-video-player.html?src=${encodeURIComponent(src)}&title=${encodeURIComponent(video.title)}`; }
+function playerUrl(video) { const src = mediaUrl(video.url); return location.protocol === 'file:' ? src : `ielts-video-player.html?id=${encodeURIComponent(video.id)}&duration=${encodeURIComponent(video.dur || 0)}&src=${encodeURIComponent(src)}&title=${encodeURIComponent(video.title)}`; }
 
 // 开始日期：从第一次打卡那天自动记录，不再写死
 const START_KEY = "ielts_g_plan_start_v1";

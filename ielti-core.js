@@ -79,7 +79,7 @@
   const SYNC_DIRTY_KEY = 'ielti_sync_dirty_v1';
   const DUE_SNAPSHOT_KEY = 'ielti_due_snapshot_v1';
   const DEBUG_LOG_KEY = 'ielti_debug_log_v2';
-  const BACKUP_KEYS = ['ielti_progress_v3', 'ielts_g_plan_progress_v2', 'ielts_g_plan_start_v1', 'ielts_vocab_mastered_v1', 'wclass_known_v1', 'wclass_familiar_v1', 'ielts_srs_v2', 'ielts_review_prefs_v1', 'ielti_phonics_121_v1'];
+  const BACKUP_KEYS = ['ielti_progress_v3', 'ielts_g_plan_progress_v2', 'ielts_g_plan_start_v1', 'ielti_video_watch_v1', 'ielts_vocab_mastered_v1', 'wclass_known_v1', 'wclass_familiar_v1', 'ielts_srs_v2', 'ielts_review_prefs_v1', 'ielti_phonics_121_v1'];
   const DAY = 86400000;
   const DEVICE_ID = (() => { let id = localStorage.getItem('ielti_device_id_v1'); if (!id) { id = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8); localStorage.setItem('ielti_device_id_v1', id); } return id; })();
   const debugLog = (() => {
@@ -108,7 +108,7 @@
         return new URL(`../${raw.replace(/^(?:\.\/)+/, '')}`, location.href).href;
       }
       if (sameNasHost()) return raw;
-      const base = NAS_BASE_URL;
+      const base = NAS_HTTPS_BASE_URL || NAS_BASE_URL;
       return base ? new URL(raw, base).href : raw;
     } catch {
       return String(path);
@@ -314,6 +314,24 @@
       model.meta.courseDurationBaselineIds = [...baseline];
     }
     save();
+  }
+  function completeCourseVideo(courseId) {
+    const id = String(courseId || '');
+    if (!id) return false;
+    const key = 'vid_' + id, legacy = parse('ielts_g_plan_progress_v2', {});
+    model.roadmap.completed ||= {};
+    if (legacy[key] || model.roadmap.completed[key]) return false;
+    legacy[key] = true;
+    localStorage.setItem('ielts_g_plan_progress_v2', JSON.stringify(legacy));
+    model.roadmap.completed[key] = true;
+    const activity = activityFor();
+    activity.courses = (activity.courses || 0) + 1;
+    const baseline = new Set(model.meta.courseDurationBaselineIds || []);
+    baseline.add(id);
+    model.meta.courseDurationBaselineIds = [...baseline];
+    debugLog.write('course_video_completed', { id, mode: 'watched' });
+    save();
+    return true;
   }
   function backfillCourseDurations(weeks, completed = model.roadmap.completed, startDate = model.roadmap.startDate) {
     if (!Array.isArray(weeks) || !startDate || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return false;
@@ -858,7 +876,7 @@
   }
   migrate();
   mirrorLegacyProgress();
-  global.IELTI = { KEY, get: () => model, save, merge, summary, wordId, migrateClassWords, getDeck, isLongMastered, reviewCard, setRoadmap, setMastered, setFamiliar, setFamiliarList, replaceDeck, getPhonics, setStudyDuration, recordStudySeconds, recordCourseVideo, backfillCourseDurations, recordActivity, due: { cutoff: dueSnapshot, isToday: isDueToday }, media: { resolve: resolveMediaUrl, nasBaseUrl: NAS_BASE_URL, nasHttpsBaseUrl: NAS_HTTPS_BASE_URL }, backup: { keys: [...BACKUP_KEYS], export: exportBackup, import: importBackup }, motion, speech: { speak: speakEnglish, pickVoice: pickEnglishVoice }, sync: { enabled: CLOUD_SYNC_ENABLED, url: SYNC_URL, run: autoSync, schedulePush: scheduleCloudPush, waitForFirstSync: () => Promise.race([_firstSyncPromise, new Promise(r => setTimeout(r, 4000))]) } };
+  global.IELTI = { KEY, get: () => model, save, merge, summary, wordId, migrateClassWords, getDeck, isLongMastered, reviewCard, setRoadmap, setMastered, setFamiliar, setFamiliarList, replaceDeck, getPhonics, setStudyDuration, recordStudySeconds, recordCourseVideo, completeCourseVideo, backfillCourseDurations, recordActivity, due: { cutoff: dueSnapshot, isToday: isDueToday }, media: { resolve: resolveMediaUrl, nasBaseUrl: NAS_BASE_URL, nasHttpsBaseUrl: NAS_HTTPS_BASE_URL }, backup: { keys: [...BACKUP_KEYS], export: exportBackup, import: importBackup }, motion, speech: { speak: speakEnglish, pickVoice: pickEnglishVoice }, sync: { enabled: CLOUD_SYNC_ENABLED, url: SYNC_URL, run: autoSync, schedulePush: scheduleCloudPush, waitForFirstSync: () => Promise.race([_firstSyncPromise, new Promise(r => setTimeout(r, 4000))]) } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', installChrome); else installChrome();
   global.addEventListener('ielti-progress', scheduleCloudPush);
   if (CLOUD_SYNC_ENABLED) {
