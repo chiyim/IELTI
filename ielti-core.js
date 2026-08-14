@@ -223,12 +223,31 @@
   }
   function save(emit = true) { enforceStudyDurationCorrections(); model.updatedAt = nowIso(); mirrorLegacyProgress(); localStorage.setItem(KEY, JSON.stringify(model)); if (emit) global.dispatchEvent(new CustomEvent('ielti-progress', { detail: model })); }
   const localDay = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
+  function normalizeDueSnapshot(value) {
+    if (!value || typeof value !== 'object' || !/^\d{4}-\d{2}-\d{2}$/.test(value.day || '') || !Number.isFinite(Number(value.cutoff))) return null;
+    return { day: value.day, cutoff: Number(value.cutoff), advancedAt: Number(value.advancedAt) || 0 };
+  }
+  function chooseDueSnapshot(localValue, remoteValue) {
+    const local = normalizeDueSnapshot(localValue), remote = normalizeDueSnapshot(remoteValue);
+    if (!local) return remote;
+    if (!remote) return local;
+    if (local.day !== remote.day) return local.day > remote.day ? local : remote;
+    if (local.advancedAt || remote.advancedAt) return local.advancedAt >= remote.advancedAt ? local : remote;
+    return local.cutoff <= remote.cutoff ? local : remote;
+  }
   function dueSnapshot(advance = false) {
     const day = localDay(), now = Date.now();
-    let snapshot = parse(DUE_SNAPSHOT_KEY, null);
-    if (!snapshot || snapshot.day !== day || !Number.isFinite(Number(snapshot.cutoff))) snapshot = { day, cutoff: now };
-    else if (advance) snapshot.cutoff = now;
+    let snapshot = chooseDueSnapshot(parse(DUE_SNAPSHOT_KEY, null), model.meta?.dueSnapshot);
+    if (!snapshot || snapshot.day !== day) snapshot = { day, cutoff: now, advancedAt: 0 };
+    else if (advance) snapshot = { day, cutoff: now, advancedAt: now };
     localStorage.setItem(DUE_SNAPSHOT_KEY, JSON.stringify(snapshot));
+    if (JSON.stringify(model.meta?.dueSnapshot || null) !== JSON.stringify(snapshot)) {
+      model.meta ||= {};
+      model.meta.dueSnapshot = snapshot;
+      model.updatedAt = nowIso();
+      localStorage.setItem(KEY, JSON.stringify(model));
+      if (CLOUD_SYNC_ENABLED) localStorage.setItem(SYNC_DIRTY_KEY, '1');
+    }
     return Number(snapshot.cutoff);
   }
   function isDueToday(card, now = Date.now(), cutoff = dueSnapshot()) {
@@ -410,6 +429,8 @@
   function merge(remote, syncId = '') {
     if (!remote || remote.version !== 3) return false;
     Object.entries(remote.roadmap?.completed || {}).forEach(function(e) { if (e[1]) model.roadmap.completed[e[0]] = true; });
+    const mergedDueSnapshot = chooseDueSnapshot(model.meta?.dueSnapshot || parse(DUE_SNAPSHOT_KEY, null), remote.meta?.dueSnapshot);
+    if (mergedDueSnapshot) { model.meta ||= {}; model.meta.dueSnapshot = mergedDueSnapshot; localStorage.setItem(DUE_SNAPSHOT_KEY, JSON.stringify(mergedDueSnapshot)); }
     var changedCards = 0, correctedLegacyMastery = 0, remoteNewer = 0, localKept = 0, dueChanged = 0, masteredChanged = 0, samples = [], correctionStamp = nowIso();
     ['core', 'class'].forEach(function(deck) {
       Object.entries(remote.vocab?.[deck] || {}).forEach(function(e) {
@@ -847,7 +868,7 @@
         list.innerHTML = html || '<div style="color:#9898BB;padding:20px;text-align:center">暂无日志</div>';
         filtered.slice(-100).reverse().forEach(function(e, i) { var el = list.children[i]?.querySelector('.dbg-detail'); if (el) el.textContent = JSON.stringify(e.data || {}, null, 2); });
       }
-      function _dbgDiagnostic() { var now = Date.now(), cutoff = dueSnapshot(), counts = {}; ['core','class'].forEach(function(deck) { var cards = Object.values(getDeck(deck)), raw = cards.filter(c => c.due && new Date(c.due).getTime() <= now).length, todayDue = cards.filter(c => isDueToday(c, now, cutoff)).length; counts[deck] = { rawDue: raw, todayDue, deferredDue: Math.max(0, raw - todayDue), totalProgressCards: cards.length }; }); return { generatedAt: nowIso(), appVersion: '20260812-46', device: DEVICE_ID.slice(-8), page: location.pathname.split('/').pop() || 'index.html', online: navigator.onLine, dueSnapshot: { day: localDay(), cutoff: new Date(cutoff).toISOString() }, decks: counts, recentSync: debugLog.all().filter(e => e.type.startsWith('sync_')).slice(-30), recentErrors: debugLog.all().filter(e => /error$/.test(e.type)).slice(-20) }; }
+      function _dbgDiagnostic() { var now = Date.now(), cutoff = dueSnapshot(), counts = {}; ['core','class'].forEach(function(deck) { var cards = Object.values(getDeck(deck)), raw = cards.filter(c => c.due && new Date(c.due).getTime() <= now).length, todayDue = cards.filter(c => isDueToday(c, now, cutoff)).length; counts[deck] = { rawDue: raw, todayDue, deferredDue: Math.max(0, raw - todayDue), totalProgressCards: cards.length }; }); return { generatedAt: nowIso(), appVersion: '20260814-50', device: DEVICE_ID.slice(-8), page: location.pathname.split('/').pop() || 'index.html', online: navigator.onLine, dueSnapshot: { day: localDay(), cutoff: new Date(cutoff).toISOString() }, decks: counts, recentSync: debugLog.all().filter(e => e.type.startsWith('sync_')).slice(-30), recentErrors: debugLog.all().filter(e => /error$/.test(e.type)).slice(-20) }; }
       btn.onclick = function() { panel.classList.toggle("open"); if (panel.classList.contains("open")) _dbgRender(); };
       document.getElementById("__dbg_close__").onclick = function() { panel.classList.remove("open"); };
       document.getElementById("__dbg_filters__").onclick = function(ev) { var el = ev.target.closest(".dbg-filter"); if (!el) return; document.querySelectorAll("#__dbg_filters__ .dbg-filter").forEach(function(f) { f.classList.remove("active"); }); el.classList.add("active"); _dbgFilter = el.dataset.filter; _dbgRender(); };

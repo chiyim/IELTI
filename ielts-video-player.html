@@ -11,7 +11,7 @@
   </style>
 </head>
 <body class="apple-ui"><main class="player-wrap"><a class="back" id="backLink" href="ielts-roadmap.html">← 返回课程路线</a><p class="kicker">IELTI COURSE PLAYER</p><h1 class="title" id="title">课程视频</h1><div class="video-shell" id="shell"><video id="video" controls playsinline preload="metadata"></video></div><p class="status" id="status">正在准备视频，播放后将自动记录实际观看时长。</p></main>
-<script src="ielti-config.js?v=20260728-5"></script><script src="ielti-core.js?v=20260814-49"></script><script>
+<script src="ielti-config.js?v=20260728-5"></script><script src="ielti-core.js?v=20260814-50"></script><script>
 const params=new URLSearchParams(location.search),src=params.get('src'),title=params.get('title')||'课程视频',courseId=params.get('id')||'',expectedDuration=Math.max(0,Number(params.get('duration'))||0),video=document.getElementById('video'),status=document.getElementById('status'),WATCH_KEY='ielti_video_watch_v1';document.getElementById('title').textContent=title;try{const returnUrl=new URL(params.get('return')||'',location.href);if(['https:','http:','file:'].includes(returnUrl.protocol))document.getElementById('backLink').href=returnUrl.href}catch(e){}
 let watched=0,pending=0,lastMediaTime=null,lastFlushAt=Date.now(),completed=false;
 function readWatch(){try{return JSON.parse(localStorage.getItem(WATCH_KEY))||{}}catch(e){return{}}}
