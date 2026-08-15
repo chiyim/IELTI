@@ -73,6 +73,12 @@ body.apple-ui .apple-mobile-title-row .apple-rail-logo:focus-visible{
   outline-offset:3px;
 }
 .ielti-sync-state{max-width:1080px;margin:1rem auto 0;padding:0 1rem 1.5rem;color:var(--apple-secondary);font-size:.75rem;font-weight:600;text-align:center}.ielti-sync-state.ok{color:var(--apple-green)}.ielti-sync-state.error{color:#ff453a}
+.ielti-sync-dot{display:none}
+@media(min-width:761px){body.page-today .apple-tabbar>.ielti-sync-dot{display:block;flex:0 0 auto;width:.5rem;height:.5rem;margin-top:auto;margin-bottom:.35rem;border-radius:50%;background:currentColor;color:var(--apple-secondary);box-shadow:0 0 .2rem currentColor,0 0 .65rem color-mix(in srgb,currentColor 48%,transparent);transition:color .2s ease,box-shadow .2s ease}body.page-today .apple-tabbar>.ielti-sync-dot.ok{color:var(--apple-green)}body.page-today .apple-tabbar>.ielti-sync-dot.error{color:#ff453a}body.page-today .apple-tabbar>.ielti-sync-dot+.apple-theme-toggle,body.page-today .apple-tabbar>.ielti-sync-dot+#themeBtn{margin-top:0!important}}
+@media(max-width:760px){body.page-today .apple-tabbar>a.active>.ielti-sync-dot{position:absolute;z-index:3;left:50%;bottom:-.7rem;display:block!important;flex:none!important;width:.62rem!important;height:.62rem!important;min-width:0!important;min-height:0!important;border:2px solid var(--apple-bg);border-radius:50%;background:currentColor;color:var(--apple-secondary);box-shadow:0 0 .18rem currentColor,0 0 .55rem color-mix(in srgb,currentColor 48%,transparent);transform:translateX(-50%);pointer-events:none}body.page-today .apple-tabbar>a.active>.ielti-sync-dot.ok{color:var(--apple-green)}body.page-today .apple-tabbar>a.active>.ielti-sync-dot.error{color:#ff453a}}
+.apple-avatar-menu{position:fixed;z-index:1201;display:grid;min-width:10rem;padding:.35rem;border:1px solid var(--apple-line);border-radius:1rem;background:color-mix(in srgb,var(--apple-solid) 92%,transparent);box-shadow:0 16px 38px rgba(0,0,0,.2);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%)}.apple-avatar-menu[hidden],.apple-avatar-backdrop[hidden]{display:none}.apple-avatar-menu-handle,.apple-avatar-menu>strong{display:none}.apple-avatar-menu button{min-height:2.5rem;padding:.55rem .75rem;border:0;border-radius:.72rem;background:transparent;color:var(--apple-ink);font:inherit;font-size:.84rem;font-weight:680;text-align:left;cursor:pointer}.apple-avatar-menu button:hover{background:color-mix(in srgb,var(--apple-blue) 11%,transparent);color:var(--apple-blue)}.apple-avatar-backdrop{display:none}@media(min-width:761px){.apple-avatar-menu,.apple-avatar-backdrop{display:none!important}}@media(max-width:760px){.apple-avatar-backdrop{position:fixed;z-index:1200;inset:0;display:block;width:100%;height:100%;padding:0;border:0;background:rgba(0,0,0,.28);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}.apple-avatar-menu{top:auto!important;right:.65rem!important;bottom:calc(.65rem + env(safe-area-inset-bottom,0px))!important;left:.65rem!important;width:auto;min-width:0;padding:.45rem .55rem .6rem;border-radius:1.45rem;background:color-mix(in srgb,var(--apple-solid) 94%,transparent);box-shadow:0 18px 55px rgba(0,0,0,.28)}.apple-avatar-menu:after{content:"";display:block;height:4rem}.apple-avatar-menu-handle{display:block;width:2.35rem;height:.28rem;margin:.15rem auto .45rem;border-radius:999px;background:color-mix(in srgb,var(--apple-secondary) 48%,transparent)}.apple-avatar-menu>strong{display:block;padding:.2rem .65rem .55rem;font-size:.82rem;color:var(--apple-secondary)}.apple-avatar-menu button{min-height:3.25rem;padding:.75rem .8rem;border-radius:.95rem;font-size:1rem;font-weight:680}.apple-avatar-menu button+button{border-top:1px solid color-mix(in srgb,var(--apple-line) 70%,transparent)}}
+@media(max-width:760px){.apple-avatar-backdrop{opacity:0;transition:opacity .24s ease}.apple-avatar-backdrop.is-open{opacity:1}.apple-avatar-menu{opacity:0;transform:translate3d(0,calc(100% + 1rem),0);transition:transform .28s cubic-bezier(.2,.8,.2,1),opacity .2s ease;will-change:transform,opacity}.apple-avatar-menu.is-open{opacity:1;transform:translate3d(0,0,0)}}
+@media(max-width:760px) and (prefers-reduced-motion:reduce){.apple-avatar-menu,.apple-avatar-backdrop{transition:none!important}}
 @media(min-width:761px){body.apple-ui{padding-left:5.25rem}.apple-desktop-rail{position:fixed;z-index:1001;inset:0 auto 0 0;width:4.75rem;padding:.8rem .4rem;display:flex;flex-direction:column;align-items:center;gap:.8rem;background:color-mix(in srgb,var(--apple-blue) 9%,var(--apple-bg));border-right:1px solid var(--apple-line)}.apple-rail-logo{display:grid;place-items:center;flex:0 0 3.25rem;width:3.25rem;border-radius:50%;background:linear-gradient(145deg,var(--apple-blue),#5856d6);color:#fff;text-decoration:none;font-size:1.55rem;font-weight:800;box-shadow:0 6px 18px color-mix(in srgb,var(--apple-blue) 35%,transparent)}.apple-tabbar{position:static;width:100%;min-height:0;flex:1;padding:.4rem;display:flex;flex-direction:column;align-items:center;gap:.35rem;background:var(--apple-surface);border:1px solid var(--apple-line);border-radius:999px;box-shadow:0 6px 24px rgba(0,0,0,.1);backdrop-filter:blur(28px) saturate(190%);-webkit-backdrop-filter:blur(28px) saturate(190%)}.apple-tabbar a{display:grid;place-items:center;flex:0 0 3.15rem;width:3.15rem;border-radius:50%;color:var(--apple-secondary);text-decoration:none;font-size:0;line-height:1}.apple-tabbar a span{font-size:1.55rem;line-height:1}.apple-tabbar a.active{color:#fff;background:var(--apple-blue);box-shadow:0 5px 14px color-mix(in srgb,var(--apple-blue) 32%,transparent)}}
 @media(min-width:761px){.apple-tabbar .apple-theme-toggle,.apple-tabbar #themeBtn{position:static;flex:0 0 3.15rem;width:3.15rem;height:3.15rem;margin-top:auto;padding:0;border:0;border-radius:50%;background:transparent;color:var(--apple-secondary);box-shadow:none;font-size:.95rem}.apple-tabbar .apple-theme-toggle:hover,.apple-tabbar #themeBtn:hover{background:color-mix(in srgb,var(--apple-blue) 11%,transparent);color:var(--apple-blue)}}
 @media(max-width:760px){body.apple-ui{padding-bottom:calc(5.4rem + var(--apple-safe-bottom))}.apple-theme-toggle{top:max(.65rem,env(safe-area-inset-top));right:.65rem}.apple-tabbar{position:fixed;z-index:1001;left:.7rem;right:.7rem;bottom:calc(.55rem + var(--apple-safe-bottom));height:4.25rem;padding:.35rem .45rem;display:grid;grid-template-columns:repeat(6,1fr);align-items:center;background:var(--apple-surface);border:1px solid var(--apple-line);border-radius:1.45rem;box-shadow:0 12px 38px rgba(0,0,0,.18);backdrop-filter:blur(28px) saturate(190%);-webkit-backdrop-filter:blur(28px) saturate(190%)}.apple-tabbar a{display:grid;place-items:center;gap:.05rem;color:var(--apple-secondary);text-decoration:none;font-size:.66rem;font-weight:650;min-height:3.4rem;border-radius:1rem}.apple-tabbar a span{font-size:1.15rem;line-height:1.2}.apple-tabbar a.active{color:var(--apple-blue);background:color-mix(in srgb,var(--apple-blue) 11%,transparent)}}
@@ -669,6 +675,65 @@ body.page-today .ring b{
   body.apple-ui.apple-nav-compact .apple-tabbar>a.active svg{width:1.9rem!important;height:1.9rem!important;stroke-width:2.1!important}
 }
 @media(max-width:760px) and (prefers-reduced-motion:reduce){body.apple-ui.apple-nav-hidden .apple-tabbar{transform:none!important;opacity:0!important}}
+
+/* Desktop rail optical alignment: shift the seven navigation items together. */
+@media(min-width:761px){.apple-tabbar>a{left:-1px!important;top:-1px!important}}
+
+/* MOBILE SYNC DOT — final lock after compact-navigation sizing. */
+@media(max-width:760px){
+  body.page-today.apple-ui .apple-tabbar>a.active>span.ielti-sync-dot,
+  body.page-today.apple-ui.apple-nav-compact .apple-tabbar>a.active>span.ielti-sync-dot{
+    --ielti-sync-dot-color:var(--apple-secondary);
+    position:absolute!important;
+    z-index:3!important;
+    left:50%!important;
+    bottom:-.6rem!important;
+    display:block!important;
+    flex:none!important;
+    width:.4rem!important;
+    height:.4rem!important;
+    min-width:0!important;
+    min-height:0!important;
+    border:0!important;
+    border-radius:50%!important;
+    background:var(--ielti-sync-dot-color)!important;
+    color:var(--ielti-sync-dot-color)!important;
+    box-shadow:0 0 .24rem color-mix(in srgb,var(--ielti-sync-dot-color) 72%,transparent),0 0 .72rem color-mix(in srgb,var(--ielti-sync-dot-color) 40%,transparent)!important;
+    transform:translateX(-50%)!important;
+    pointer-events:none!important;
+  }
+  body.page-today.apple-ui.apple-nav-compact .apple-tabbar>a.active>span.ielti-sync-dot{bottom:-.38rem!important}
+  body.page-today.apple-ui .apple-tabbar>a.active>span.ielti-sync-dot.ok{--ielti-sync-dot-color:var(--apple-green)}
+  body.page-today.apple-ui .apple-tabbar>a.active>span.ielti-sync-dot.error{--ielti-sync-dot-color:#ff453a}
+}
+
+/* Keep the sync marker independent from active-tab color and compact icon sizing. */
+@media(max-width:760px){
+  body.page-today.apple-ui .apple-tabbar>a.active>span.ielti-sync-dot,
+  body.page-today.apple-ui.apple-nav-compact .apple-tabbar>a.active>span.ielti-sync-dot{
+    --ielti-sync-dot-color:var(--apple-secondary);
+    position:absolute!important;
+    z-index:3!important;
+    left:50%!important;
+    bottom:-.6rem!important;
+    display:block!important;
+    flex:none!important;
+    width:.4rem!important;
+    height:.4rem!important;
+    min-width:0!important;
+    min-height:0!important;
+    border:0!important;
+    border-radius:50%!important;
+    background:var(--ielti-sync-dot-color)!important;
+    color:var(--ielti-sync-dot-color)!important;
+    box-shadow:0 0 .24rem color-mix(in srgb,var(--ielti-sync-dot-color) 72%,transparent),0 0 .72rem color-mix(in srgb,var(--ielti-sync-dot-color) 40%,transparent)!important;
+    transform:translateX(-50%)!important;
+    pointer-events:none!important;
+  }
+  body.page-today.apple-ui.apple-nav-compact .apple-tabbar>a.active>span.ielti-sync-dot{bottom:-.38rem!important}
+  body.page-today.apple-ui .apple-tabbar>a.active>span.ielti-sync-dot.ok{--ielti-sync-dot-color:var(--apple-green)}
+  body.page-today.apple-ui .apple-tabbar>a.active>span.ielti-sync-dot.error{--ielti-sync-dot-color:#ff453a}
+}
 
 /* Shared study timer pause notice: shown after five minutes without learner activity. */
 .ielti-study-pause-notice{position:fixed;z-index:9999;inset:0;display:grid;place-items:center;padding:1.25rem;pointer-events:none}

@@ -79,6 +79,7 @@
   const SYNC_DIRTY_KEY = 'ielti_sync_dirty_v1';
   const DUE_SNAPSHOT_KEY = 'ielti_due_snapshot_v1';
   const DEBUG_LOG_KEY = 'ielti_debug_log_v2';
+  const VIDEO_WATCH_KEY = 'ielti_video_watch_v1';
   const BACKUP_KEYS = ['ielti_progress_v3', 'ielts_g_plan_progress_v2', 'ielts_g_plan_start_v1', 'ielti_video_watch_v1', 'ielts_vocab_mastered_v1', 'wclass_known_v1', 'wclass_familiar_v1', 'ielts_srs_v2', 'ielts_review_prefs_v1', 'ielti_phonics_121_v1'];
   const DAY = 86400000;
   const DEVICE_ID = (() => { let id = localStorage.getItem('ielti_device_id_v1'); if (!id) { id = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8); localStorage.setItem('ielti_device_id_v1', id); } return id; })();
@@ -125,9 +126,10 @@
     setIconLink('link[rel~="icon"]', 'icon');
     setIconLink('link[rel="apple-touch-icon"]', 'apple-touch-icon');
   }
-  const fresh = () => ({ version: 3, deviceId: global.crypto?.randomUUID ? global.crypto.randomUUID() : String(Date.now()), updatedAt: nowIso(), roadmap: { startDate: '', completed: {} }, vocab: { core: {}, class: {} }, phonics: { learned: [], reviews: [], quiz: { right: 0, total: 0 } }, activity: {} });
+  const fresh = () => ({ version: 3, deviceId: global.crypto?.randomUUID ? global.crypto.randomUUID() : String(Date.now()), updatedAt: nowIso(), roadmap: { startDate: '', completed: {} }, videoWatch: {}, vocab: { core: {}, class: {} }, phonics: { learned: [], reviews: [], quiz: { right: 0, total: 0 } }, activity: {} });
   let model = parse(KEY, null) || fresh();
   model.roadmap ||= { startDate: '', completed: {} };
+  model.videoWatch ||= {};
   model.roadmap.completed ||= {};
   model.vocab ||= { core: {}, class: {} };
   model.vocab.core ||= {};
@@ -191,7 +193,7 @@
     return changed;
   }
   function migrate() {
-    let changed = !localStorage.getItem(KEY);
+    let changed = !localStorage.getItem(KEY), videoWatchMigrated = false;
     const road = parse('ielts_g_plan_progress_v2', {});
     if (!Object.keys(model.roadmap.completed).length && Object.keys(road).length) { model.roadmap.completed = road; changed = true; }
     const start = localStorage.getItem('ielts_g_plan_start_v1');
@@ -209,6 +211,13 @@
       model.phonics = { learned: [...new Set([...current.learned, ...phonics.learned])], reviews: [...new Set([...current.reviews, ...phonics.reviews])], quiz: { right: Math.max(current.quiz.right, phonics.quiz.right), total: Math.max(current.quiz.total, phonics.quiz.total) } };
       changed = true;
     }
+    const legacyVideoWatch = parse(VIDEO_WATCH_KEY, {});
+    Object.entries(legacyVideoWatch).forEach(([id, entry]) => {
+      const merged = mergeVideoWatchEntry(model.videoWatch[id], entry);
+      if (JSON.stringify(merged) !== JSON.stringify(model.videoWatch[id] || null)) { model.videoWatch[id] = merged; changed = true; videoWatchMigrated = true; }
+    });
+    if (reconcileVideoCompletions()) { changed = true; videoWatchMigrated = true; }
+    if (videoWatchMigrated && CLOUD_SYNC_ENABLED) localStorage.setItem(SYNC_DIRTY_KEY, '1');
     if (changed) save(false);
   }
   function mirrorLegacyProgress() {
@@ -220,6 +229,7 @@
     localStorage.setItem('wclass_known_v1', JSON.stringify(familiarIds));
     localStorage.setItem('wclass_familiar_v1', JSON.stringify(familiarIds));
     localStorage.setItem('ielti_phonics_121_v1', JSON.stringify(normalizePhonics(model.phonics)));
+    localStorage.setItem(VIDEO_WATCH_KEY, JSON.stringify(model.videoWatch || {}));
   }
   function save(emit = true) { enforceStudyDurationCorrections(); model.updatedAt = nowIso(); mirrorLegacyProgress(); localStorage.setItem(KEY, JSON.stringify(model)); if (emit) global.dispatchEvent(new CustomEvent('ielti-progress', { detail: model })); }
   const localDay = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
@@ -337,6 +347,46 @@
     save();
     return true;
   }
+  function normalizeVideoWatchEntry(entry) {
+    const value = entry && typeof entry === 'object' ? entry : {};
+    const watched = Math.max(0, Number(value.watched) || 0), duration = Math.max(0, Number(value.duration) || 0);
+    return {
+      watched,
+      position: Math.max(0, Number(value.position) || 0),
+      duration,
+      completed: !!value.completed || !!(duration && watched >= duration * .9),
+      updatedAt: /^\d{4}-\d{2}-\d{2}T/.test(value.updatedAt || '') ? value.updatedAt : ''
+    };
+  }
+  function mergeVideoWatchEntry(localEntry, remoteEntry) {
+    const local = normalizeVideoWatchEntry(localEntry), remote = normalizeVideoWatchEntry(remoteEntry);
+    const localTime = new Date(local.updatedAt || 0).getTime(), remoteTime = new Date(remote.updatedAt || 0).getTime();
+    const newer = remoteTime > localTime ? remote : local;
+    const watched = Math.max(local.watched, remote.watched), duration = Math.max(local.duration, remote.duration);
+    return { watched, position: newer.position, duration, completed: local.completed || remote.completed || !!(duration && watched >= duration * .9), updatedAt: newer.updatedAt || local.updatedAt || remote.updatedAt };
+  }
+  function reconcileVideoCompletions() {
+    let changed = false;
+    model.roadmap.completed ||= {};
+    Object.entries(model.videoWatch || {}).forEach(([id, entry]) => {
+      const normalized = normalizeVideoWatchEntry(entry);
+      model.videoWatch[id] = normalized;
+      if (normalized.completed && !model.roadmap.completed['vid_' + id]) { model.roadmap.completed['vid_' + id] = true; changed = true; }
+    });
+    return changed;
+  }
+  function recordVideoWatch(courseId, data = {}, requestSync = false) {
+    const id = String(courseId || '');
+    if (!id) return null;
+    const incoming = normalizeVideoWatchEntry({ ...data, updatedAt: data.updatedAt || nowIso() });
+    const next = mergeVideoWatchEntry(model.videoWatch[id], incoming);
+    model.videoWatch[id] = next;
+    const newlyCompleted = next.completed && !model.roadmap.completed?.['vid_' + id];
+    if (newlyCompleted) completeCourseVideo(id); else save(false);
+    if (CLOUD_SYNC_ENABLED) localStorage.setItem(SYNC_DIRTY_KEY, '1');
+    if (requestSync && !newlyCompleted) scheduleCloudPush();
+    return next;
+  }
   function backfillCourseDurations(weeks, completed = model.roadmap.completed, startDate = model.roadmap.startDate) {
     if (!Array.isArray(weeks) || !startDate || !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return false;
     const baseline = new Set(model.meta.courseDurationBaselineIds || []);
@@ -429,6 +479,8 @@
   function merge(remote, syncId = '') {
     if (!remote || remote.version !== 3) return false;
     Object.entries(remote.roadmap?.completed || {}).forEach(function(e) { if (e[1]) model.roadmap.completed[e[0]] = true; });
+    Object.entries(remote.videoWatch || {}).forEach(function(e) { model.videoWatch[e[0]] = mergeVideoWatchEntry(model.videoWatch[e[0]], e[1]); });
+    reconcileVideoCompletions();
     const mergedDueSnapshot = chooseDueSnapshot(model.meta?.dueSnapshot || parse(DUE_SNAPSHOT_KEY, null), remote.meta?.dueSnapshot);
     if (mergedDueSnapshot) { model.meta ||= {}; model.meta.dueSnapshot = mergedDueSnapshot; localStorage.setItem(DUE_SNAPSHOT_KEY, JSON.stringify(mergedDueSnapshot)); }
     var changedCards = 0, correctedLegacyMastery = 0, remoteNewer = 0, localKept = 0, dueChanged = 0, masteredChanged = 0, samples = [], correctionStamp = nowIso();
@@ -465,7 +517,8 @@
   function compactModelForSync() {
     const compactDeck = deck => Object.fromEntries(Object.entries(model.vocab?.[deck] || {}).filter(([, card]) => hasCardProgress(card)).map(([id, card]) => [id, normalizeCard(card)]));
     const completed = Object.fromEntries(Object.entries(model.roadmap?.completed || {}).filter(([, value]) => value));
-    const compact = { ...model, roadmap: { startDate: model.roadmap?.startDate || '', completed }, vocab: { core: compactDeck('core'), class: compactDeck('class') }, phonics: normalizePhonics(model.phonics), activity: model.activity || {} };
+    const compactVideoWatch = Object.fromEntries(Object.entries(model.videoWatch || {}).map(([id, entry]) => [id, normalizeVideoWatchEntry(entry)]));
+    const compact = { ...model, roadmap: { startDate: model.roadmap?.startDate || '', completed }, videoWatch: compactVideoWatch, vocab: { core: compactDeck('core'), class: compactDeck('class') }, phonics: normalizePhonics(model.phonics), activity: model.activity || {} };
     delete compact._debugLog;
     return compact;
   }
@@ -479,7 +532,10 @@
   let syncTimer = null, syncing = false, resyncRequested = false, resyncPushRequested = false, applyingRemote = false;
   let _firstSyncDone = false, _firstSyncResolve = null;
   const _firstSyncPromise = new Promise(r => { _firstSyncResolve = r; });
-  function syncStatus(text, state = '') { document.querySelectorAll('[data-ielti-sync],#syncState').forEach(el => { el.className = `ielti-sync-state ${state}`; el.textContent = `${CLOUD_SYNC_ENABLED ? '☁︎' : '◉'} ${text}`; }); }
+  function syncStatus(text, state = '') {
+    document.querySelectorAll('[data-ielti-sync],#syncState').forEach(el => { el.className = `ielti-sync-state ${state}`; el.textContent = `${CLOUD_SYNC_ENABLED ? '☁︎' : '◉'} ${text}`; });
+    document.querySelectorAll('.ielti-sync-dot').forEach(dot => { dot.className = `ielti-sync-dot ${state}`; dot.title = text; dot.setAttribute('aria-label', `同步状态：${text}`); });
+  }
   function syncErrorMessage(error) {
     const msg = String(error?.message || error || '');
     if (/Failed to fetch|Load failed|NetworkError/i.test(msg)) return '无法连接同步服务器';
@@ -700,7 +756,7 @@
       };
       document.body.appendChild(toggle);
     }
-    let avatarControl = null;
+    let avatarControl = null, avatarMenu = null, avatarBackdrop = null, avatarMenuTimer = null;
     if (!document.querySelector('.apple-tabbar')) {
       const current = page;
       const navIcon = name => {
@@ -727,7 +783,29 @@
       const applyAvatar = source => { const custom = Boolean(source); logo.classList.add('has-photo'); logo.classList.toggle('has-custom-photo', custom); logo.style.backgroundImage = `url("${source || defaultAvatar}")`; logo.textContent = ''; logo.title = custom ? '点击更换头像；右键恢复默认头像' : '点击上传个人头像'; };
       const resetAvatar = () => { try { localStorage.removeItem(avatarKey); } catch (_) { /* local storage is unavailable */ } applyAvatar(''); };
       try { applyAvatar(localStorage.getItem(avatarKey)); } catch (_) { applyAvatar(''); }
-      logo.addEventListener('click', () => avatarInput.click());
+      const closeAvatarMenu = () => {
+        if (!avatarMenu || avatarMenu.hidden) return;
+        clearTimeout(avatarMenuTimer);
+        avatarMenu.classList.remove('is-open');
+        avatarBackdrop?.classList.remove('is-open');
+        avatarMenuTimer = setTimeout(() => { avatarMenu.hidden = true; if (avatarBackdrop) avatarBackdrop.hidden = true; }, 280);
+      };
+      const positionAvatarMenu = () => {
+        if (!avatarMenu || !avatarControl) return;
+        const rect = avatarControl.getBoundingClientRect();
+        avatarMenu.style.top = `${Math.min(innerHeight - avatarMenu.offsetHeight - 12, rect.bottom + 8)}px`;
+        avatarMenu.style.right = `${Math.max(12, innerWidth - rect.right)}px`;
+      };
+      logo.addEventListener('click', event => {
+        if (!matchMedia('(max-width:760px)').matches) { avatarInput.click(); return; }
+        event.stopPropagation();
+        const opening = avatarMenu.hidden || !avatarMenu.classList.contains('is-open');
+        if (!opening) { closeAvatarMenu(); return; }
+        clearTimeout(avatarMenuTimer);
+        avatarMenu.hidden = false;
+        if (avatarBackdrop) avatarBackdrop.hidden = false;
+        requestAnimationFrame(() => { positionAvatarMenu(); avatarMenu.classList.add('is-open'); avatarBackdrop?.classList.add('is-open'); });
+      });
       logo.addEventListener('contextmenu', event => { event.preventDefault(); if (!logo.classList.contains('has-custom-photo') || confirm('恢复默认头像？')) resetAvatar(); });
       avatarInput.addEventListener('change', async () => {
         const file = avatarInput.files && avatarInput.files[0]; avatarInput.value = '';
@@ -740,6 +818,20 @@
         } catch (_) { /* Keep the current avatar if the selected image cannot be processed. */ }
       });
       nav.before(rail); rail.append(nav); document.body.appendChild(avatarInput);
+      avatarBackdrop = document.createElement('button'); avatarBackdrop.type = 'button'; avatarBackdrop.className = 'apple-avatar-backdrop'; avatarBackdrop.hidden = true; avatarBackdrop.setAttribute('aria-label', '关闭头像菜单'); avatarBackdrop.addEventListener('click', closeAvatarMenu);
+      avatarMenu = document.createElement('div'); avatarMenu.className = 'apple-avatar-menu'; avatarMenu.hidden = true; avatarMenu.setAttribute('role', 'menu'); avatarMenu.setAttribute('aria-label', '头像与显示设置'); avatarMenu.innerHTML = '<i class="apple-avatar-menu-handle" aria-hidden="true"></i><strong>头像与显示</strong><button type="button" data-avatar-action="display" role="menuitem">切换显示模式</button><button type="button" data-avatar-action="change" role="menuitem">更换头像</button><button type="button" data-avatar-action="reset" role="menuitem">恢复默认头像</button>';
+      avatarMenu.addEventListener('click', event => {
+        const action = event.target.closest('[data-avatar-action]')?.dataset.avatarAction;
+        if (!action) return;
+        if (action === 'display') { themeControl?.click(); return; }
+        if (action === 'change') avatarInput.click();
+        if (action === 'reset' && (!logo.classList.contains('has-custom-photo') || confirm('恢复默认头像？'))) resetAvatar();
+        closeAvatarMenu();
+      });
+      document.addEventListener('click', event => { if (!avatarMenu.hidden && !avatarMenu.contains(event.target) && event.target !== logo) closeAvatarMenu(); });
+      document.addEventListener('keydown', event => { if (event.key === 'Escape') closeAvatarMenu(); });
+      addEventListener('resize', () => { if (!avatarMenu.hidden) positionAvatarMenu(); }, { passive: true });
+      document.body.append(avatarBackdrop, avatarMenu);
       const links=[...nav.querySelectorAll('a')],activeIndex=links.findIndex(link=>link.classList.contains('active')),storageKey='ielti_nav_previous_index',storedIndex=sessionStorage.getItem(storageKey);
       let previousIndex=storedIndex===null?activeIndex:Number(storedIndex);
       const snapPixel=value=>{const ratio=global.devicePixelRatio||1;return Math.round(value*ratio)/ratio;};
@@ -836,8 +928,14 @@
     const titleRow = title => { if (!title) return null; let row = title.parentElement?.classList.contains('apple-mobile-title-row') ? title.parentElement : null; if (!row) { const host = title.parentElement; host?.classList.add('apple-mobile-title-host'); row = document.createElement('div'); row.className = 'apple-mobile-title-row'; title.before(row); row.append(title); } return row; };
     const pageTitle = () => pageClass === 'page-review' ? document.querySelector('.brand h1') : pageClass === 'page-class' ? document.querySelector('.page-title-brand h1') : document.querySelector('.top h1,.hero h1,.phonics-head h1');
     const placeAvatarControl = () => { if (!avatarControl) return; titleRow(pageTitle())?.append(avatarControl); };
-    const placeThemeControl = () => { if (!themeControl) return; themeControl.style.removeProperty('top'); themeControl.style.removeProperty('transform'); themeControl.style.removeProperty('margin'); themeControl.style.removeProperty('position'); const desktop = matchMedia('(min-width:761px)').matches; if (desktop) { document.querySelector('.apple-tabbar')?.append(themeControl); themeControl.style.setProperty('margin-bottom', '-4px', 'important'); } else if (pageClass === 'page-review') { titleRow(document.querySelector('.brand h1'))?.append(themeControl); } else if (pageClass === 'page-class') { titleRow(document.querySelector('.page-title-brand h1'))?.append(themeControl); } else titleRow(document.querySelector('.top h1,.hero h1,.phonics-head h1'))?.append(themeControl); };
-    placeThemeControl(); placeAvatarControl(); matchMedia('(min-width:761px)').addEventListener('change', () => { placeThemeControl(); placeAvatarControl(); });
+    const placeThemeControl = () => { if (!themeControl) return; themeControl.style.removeProperty('top'); themeControl.style.removeProperty('transform'); themeControl.style.removeProperty('margin'); themeControl.style.removeProperty('position'); const desktop = matchMedia('(min-width:761px)').matches; if (desktop) { document.querySelector('.apple-tabbar')?.append(themeControl); themeControl.style.setProperty('margin-bottom', '-4px', 'important'); } else themeControl.remove(); };
+    let syncDot = null;
+    const placeSyncDot = () => {
+      if (pageClass !== 'page-today' || !themeControl) return;
+      if (!syncDot) { syncDot = document.createElement('span'); syncDot.className = 'ielti-sync-dot'; syncDot.setAttribute('role', 'status'); syncDot.setAttribute('aria-live', 'polite'); }
+      if (matchMedia('(min-width:761px)').matches) themeControl.before(syncDot); else document.querySelector('.apple-tabbar a.active')?.append(syncDot);
+    };
+    placeThemeControl(); placeAvatarControl(); placeSyncDot(); matchMedia('(min-width:761px)').addEventListener('change', () => { placeThemeControl(); placeAvatarControl(); placeSyncDot(); });
     if (!document.querySelector('[data-ielti-sync]') && !document.getElementById('syncState')) { const status = document.createElement('div'); status.dataset.ieltiSync = ''; status.className = 'ielti-sync-state'; status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite'); document.body.appendChild(status); }
     syncStatus(CLOUD_SYNC_ENABLED ? '准备自动同步…' : '本地模式 · 进度仅保存在此浏览器');
 
@@ -882,7 +980,7 @@
   }
   migrate();
   mirrorLegacyProgress();
-  global.IELTI = { KEY, get: () => model, save, merge, summary, wordId, migrateClassWords, getDeck, isLongMastered, reviewCard, setRoadmap, setMastered, setFamiliar, setFamiliarList, replaceDeck, getPhonics, setStudyDuration, recordStudySeconds, recordCourseVideo, completeCourseVideo, backfillCourseDurations, recordActivity, due: { cutoff: dueSnapshot, isToday: isDueToday }, media: { resolve: resolveMediaUrl, nasBaseUrl: NAS_BASE_URL, nasHttpsBaseUrl: NAS_HTTPS_BASE_URL }, backup: { keys: [...BACKUP_KEYS], export: exportBackup, import: importBackup }, motion, speech: { speak: speakEnglish, pickVoice: pickEnglishVoice }, sync: { enabled: CLOUD_SYNC_ENABLED, url: SYNC_URL, run: autoSync, schedulePush: scheduleCloudPush, waitForFirstSync: () => Promise.race([_firstSyncPromise, new Promise(r => setTimeout(r, 4000))]) } };
+  global.IELTI = { KEY, get: () => model, save, merge, summary, wordId, migrateClassWords, getDeck, isLongMastered, reviewCard, setRoadmap, setMastered, setFamiliar, setFamiliarList, replaceDeck, getPhonics, setStudyDuration, recordStudySeconds, recordCourseVideo, completeCourseVideo, recordVideoWatch, backfillCourseDurations, recordActivity, due: { cutoff: dueSnapshot, isToday: isDueToday }, media: { resolve: resolveMediaUrl, nasBaseUrl: NAS_BASE_URL, nasHttpsBaseUrl: NAS_HTTPS_BASE_URL }, backup: { keys: [...BACKUP_KEYS], export: exportBackup, import: importBackup }, motion, speech: { speak: speakEnglish, pickVoice: pickEnglishVoice }, sync: { enabled: CLOUD_SYNC_ENABLED, url: SYNC_URL, run: autoSync, schedulePush: scheduleCloudPush, waitForFirstSync: () => Promise.race([_firstSyncPromise, new Promise(r => setTimeout(r, 4000))]) } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', installChrome); else installChrome();
   global.addEventListener('ielti-progress', scheduleCloudPush);
   if (CLOUD_SYNC_ENABLED) {
