@@ -268,7 +268,7 @@
   }
   function activityFor(day = localDay()) { return model.activity[day] ||= { reviews: 0, courses: 0, studySeconds: 0, vocabStudySeconds: 0, videoSeconds: 0, newWords: 0, reviewWords: 0, forgotten: 0, dictCorrect: 0, dictWrong: 0, newMastered: 0, timeByPeriod: {} }; }
   function markActivity(kind) { const activity = activityFor(); activity[kind] = (activity[kind] || 0) + 1; }
-  function recordActivity(kind, amount = 1) { const activity = activityFor(); activity[kind] = (activity[kind] || 0) + Math.max(0, Number(amount) || 0); save(false); }
+  function recordActivity(kind, amount = 1) { const activity = activityFor(); activity[kind] = (activity[kind] || 0) + Math.max(0, Number(amount) || 0); save(); }
   let lastTimeSyncAt = 0;
   function completeDailyVocabTask() {
     const startDate = model.roadmap.startDate || localStorage.getItem('ielts_g_plan_start_v1');
@@ -983,6 +983,26 @@
   global.IELTI = { KEY, get: () => model, save, merge, summary, wordId, migrateClassWords, getDeck, isLongMastered, reviewCard, setRoadmap, setMastered, setFamiliar, setFamiliarList, replaceDeck, getPhonics, setStudyDuration, recordStudySeconds, recordCourseVideo, completeCourseVideo, recordVideoWatch, backfillCourseDurations, recordActivity, due: { cutoff: dueSnapshot, isToday: isDueToday }, media: { resolve: resolveMediaUrl, nasBaseUrl: NAS_BASE_URL, nasHttpsBaseUrl: NAS_HTTPS_BASE_URL }, backup: { keys: [...BACKUP_KEYS], export: exportBackup, import: importBackup }, motion, speech: { speak: speakEnglish, pickVoice: pickEnglishVoice }, sync: { enabled: CLOUD_SYNC_ENABLED, url: SYNC_URL, run: autoSync, schedulePush: scheduleCloudPush, waitForFirstSync: () => Promise.race([_firstSyncPromise, new Promise(r => setTimeout(r, 4000))]) } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', installChrome); else installChrome();
   global.addEventListener('ielti-progress', scheduleCloudPush);
+  global.addEventListener('storage', event => {
+    if (event.key !== KEY || !event.newValue) return;
+    try {
+      const incoming = JSON.parse(event.newValue);
+      if (!incoming || incoming.version !== 3) return;
+      model = incoming;
+      model.roadmap ||= { startDate: '', completed: {} };
+      model.roadmap.completed ||= {};
+      model.videoWatch ||= {};
+      model.vocab ||= { core: {}, class: {} };
+      model.vocab.core ||= {};
+      model.vocab.class ||= {};
+      model.phonics = normalizePhonics(model.phonics);
+      model.activity ||= {};
+      model.meta ||= {};
+      applyingRemote = true;
+      global.dispatchEvent(new CustomEvent('ielti-progress', { detail: model }));
+      applyingRemote = false;
+    } catch (_) { applyingRemote = false; }
+  });
   if (CLOUD_SYNC_ENABLED) {
     global.addEventListener('online', () => autoSync(localStorage.getItem(SYNC_DIRTY_KEY) === '1'));
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') autoSync(false); });
