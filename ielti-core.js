@@ -931,7 +931,7 @@
     const placeThemeControl = () => { if (!themeControl) return; themeControl.style.removeProperty('top'); themeControl.style.removeProperty('transform'); themeControl.style.removeProperty('margin'); themeControl.style.removeProperty('position'); const desktop = matchMedia('(min-width:761px)').matches; if (desktop) { document.querySelector('.apple-tabbar')?.append(themeControl); themeControl.style.setProperty('margin-bottom', '-4px', 'important'); } else themeControl.remove(); };
     let syncDot = null;
     const placeSyncDot = () => {
-      if (pageClass !== 'page-today' || !themeControl) return;
+      if (!themeControl) return;
       if (!syncDot) { syncDot = document.createElement('span'); syncDot.className = 'ielti-sync-dot'; syncDot.setAttribute('role', 'status'); syncDot.setAttribute('aria-live', 'polite'); }
       if (matchMedia('(min-width:761px)').matches) themeControl.before(syncDot); else document.querySelector('.apple-tabbar a.active')?.append(syncDot);
     };
