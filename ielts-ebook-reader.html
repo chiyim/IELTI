@@ -57,7 +57,7 @@ setTimeout(() => document.documentElement.classList.remove('ielti-booting'), 120
 </main>
 
 <footer class="reader-foot">
-  <a class="reader-btn" href="ielts-ebook-library.html">← 图书馆</a>
+  <a class="reader-btn" id="readerBack" href="ielts-ebook-library.html">← 图书馆</a>
   <a class="reader-btn" id="openExternal" target="_blank" rel="noopener">↗ 新窗口</a>
 </footer>
 
@@ -80,8 +80,13 @@ setTimeout(() => document.documentElement.classList.remove('ielti-booting'), 120
   var $ = function (id) { return document.getElementById(id); };
   var READER_KEY = 'ielti_reader_state_v1';
 
+  var params = new URLSearchParams(location.search);
+  var directSource = params.get('src') || '';
+  var directTitle = params.get('title') || '';
+  var directId = params.get('id') || '';
+
   function getBook() {
-    var id = new URLSearchParams(location.search).get('id') || '';
+    var id = directId;
     var books = window.IELTI_LIBRARY || [];
     return books.find(function (b) { return b.id === id; });
   }
@@ -91,15 +96,28 @@ setTimeout(() => document.documentElement.classList.remove('ielti-booting'), 120
     return base.replace(/\/$/, '') + '/' + encodeURIComponent(book.file);
   }
 
-  var book = getBook();
-  if (!book) return;
-  var url = buildFileUrl(book);
-  document.title = book.title;
+  var book = directSource ? null : getBook();
+  if (!book && !directSource) return;
+  var readerId = directSource ? (directId || directSource) : book.id;
+  var title = directSource ? (directTitle || 'PDF 阅读器') : book.title;
+  var url = directSource || buildFileUrl(book);
+  document.title = title;
   $('openExternal').href = url;
+
+  var returnRaw = params.get('return') || '';
+  if (returnRaw) {
+    try {
+      var returnUrl = new URL(returnRaw, location.href);
+      if (['https:', 'http:', 'file:'].indexOf(returnUrl.protocol) > -1) {
+        $('readerBack').href = returnUrl.href;
+        $('readerBack').textContent = params.get('returnLabel') || '← 返回';
+      }
+    } catch (_) {}
+  }
 
   try {
     var m = JSON.parse(localStorage.getItem(READER_KEY) || '{}');
-    m[book.id] = { at: Date.now() };
+    m[readerId] = { at: Date.now() };
     localStorage.setItem(READER_KEY, JSON.stringify(m));
   } catch (_) {}
 

@@ -165,7 +165,7 @@ input[type=checkbox]{accent-color:#5B6CF5}
     · 每周卡片点击标题栏可展开/收起，前 6 天是当天要看的具体视频，第 7 天为复习日。<br>
     · 点击「打开」进入站内播放器；播放器按实际观看时长记录学习，累计观看达到 90% 后自动完成课程。<br>
     · 词汇打卡按当天实际词汇学习时长判断，累计满 30 分钟后自动完成，勾选框仅用于显示状态。<br>
-    · 「本周资料」是配套的 PDF 讲义、词表、机经、录音等参考材料，可以点击打开，但不计入打卡进度。<br>
+    · 「本周资料」是配套的 PDF 讲义、词表、机经、录音等参考材料；PDF 会在站内阅读器打开，阅读时长计入学习总时长，但不计入视频或词汇打卡进度。<br>
     · 打卡状态会先保存在本设备浏览器中；自动同步服务器可把进度合并到你的其他设备。
   </div>
 
@@ -220,6 +220,11 @@ function saveProgress(p) { localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
 let progress = loadProgress();
 function mediaUrl(path) { return window.IELTI?.media?.resolve ? IELTI.media.resolve(path) : path; }
 function playerUrl(video) { const src = mediaUrl(video.url), base = window.IELTI?.media?.nasHttpsBaseUrl || ''; return `${base}ielts-video-player.html?id=${encodeURIComponent(video.id)}&duration=${encodeURIComponent(video.dur || 0)}&src=${encodeURIComponent(src)}&title=${encodeURIComponent(video.title)}&return=${encodeURIComponent(location.href)}`; }
+function materialUrl(material) {
+  const src = mediaUrl(material.url);
+  if (String(material.ext || '').toLowerCase() !== '.pdf') return src;
+  return `ielts-ebook-reader.html?src=${encodeURIComponent(src)}&id=${encodeURIComponent('roadmap_pdf_' + material.id)}&title=${encodeURIComponent(material.title)}&return=${encodeURIComponent(location.href)}&returnLabel=${encodeURIComponent('← 路线图')}`;
+}
 
 // 开始日期：从第一次打卡那天自动记录，不再写死
 const START_KEY = "ielts_g_plan_start_v1";
@@ -609,7 +614,7 @@ function renderWeeks() {
         const li = document.createElement("li");
         li.innerHTML = `
           <span class="mat-title">${m.title} <span class="mat-tag">${m.ext.replace(".","").toUpperCase()}</span></span>
-          <a class="openlink" href="${mediaUrl(m.url)}" target="_blank" rel="noopener">打开</a>
+          <a class="openlink" href="${materialUrl(m)}" target="_blank" rel="noopener">打开</a>
         `;
         ul.appendChild(li);
       }
